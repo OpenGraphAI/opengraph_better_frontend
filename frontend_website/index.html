@@ -1,0 +1,659 @@
+<!doctype html>
+<!-- Palette: the preserved blue branch uses data-theme="cyanotype". -->
+<html lang="en" data-theme="paper">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OpenGraph AI turns multimodal data into queryable knowledge graphs for AI agents."
+    />
+    <title>OpenGraph AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=Instrument+Sans:opsz,wght@12..32,400;12..32,500;12..32,600;12..32,700&family=Inter+Tight:wght@400;500;600&family=Jersey+25&family=Pixelify+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="morphic-navbar" data-site-header>
+      <nav class="nav-shell" aria-label="Primary navigation">
+        <a class="nav-brand" href="#home" aria-label="OpenGraph AI home">
+          <svg class="nav-brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+            <path d="M7 18.5 13.8 6l7.4 13.7" />
+            <circle cx="7" cy="18.5" r="2.3" />
+            <circle cx="13.8" cy="6" r="2.3" />
+            <circle cx="21.2" cy="19.7" r="2.3" />
+          </svg>
+          <span>OpenGraph <b>AI</b></span>
+        </a>
+
+        <div class="nav-desktop" data-nav-menu>
+          <details class="nav-dropdown">
+            <summary>Products <span class="nav-chevron" aria-hidden="true"></span></summary>
+            <div class="nav-popover">
+              <a href="#how-it-works"><b>How it works</b><span>See the context pipeline</span></a>
+              <a href="#playground"><b>Playground</b><span>Try the developer workflow</span></a>
+              <a href="#about"><b>Open source</b><span>Explore the project</span></a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Use Cases <span class="nav-chevron" aria-hidden="true"></span></summary>
+            <div class="nav-popover">
+              <a href="#use-cases"><b>Research agents</b><span>Answers grounded in evidence</span></a>
+              <a href="#use-cases"><b>Enterprise memory</b><span>Connect operational knowledge</span></a>
+              <a href="#use-cases"><b>Multimodal RAG</b><span>Reason across every source</span></a>
+            </div>
+          </details>
+          <a class="nav-link" href="#" data-mock-link>Pricing</a>
+          <a class="nav-link" href="#" data-mock-link>Enterprise</a>
+          <details class="nav-dropdown">
+            <summary>Resources <span class="nav-chevron" aria-hidden="true"></span></summary>
+            <div class="nav-popover nav-popover-right">
+              <a href="/docs/"><b>Documentation</b><span>Guides and API reference</span></a>
+              <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer"><b>GitHub</b><span>Source, issues, and releases</span></a>
+              <a href="#about"><b>About</b><span>Why we're building OpenGraph</span></a>
+            </div>
+          </details>
+        </div>
+
+        <div class="nav-actions">
+          <a class="nav-social" href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer" aria-label="OpenGraph AI on GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.7a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1.1 1.6 1.1.9 1.6 2.4 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.3-.3-4.6-1.1-4.6-4.7 0-1 .4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.7 1a9.3 9.3 0 0 1 4.9 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.6.7 1 1.6 1 2.6 0 3.7-2.3 4.5-4.6 4.7.4.3.7 1 .7 1.9v2.8c0 .4.2.7.7.5A9.5 9.5 0 0 0 12 2.7Z" /></svg>
+          </a>
+          <a class="nav-social" href="https://www.linkedin.com/company/opengraph-ai/" target="_blank" rel="noopener noreferrer" aria-label="OpenGraph AI on LinkedIn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 8.5H3.4V19h3.2V8.5ZM5 3a1.9 1.9 0 1 0 0 3.8A1.9 1.9 0 0 0 5 3Zm7 5.5H8.9V19H12v-5.2c0-1.4.3-2.7 2-2.7 1.7 0 1.7 1.6 1.7 2.8V19H19v-5.8c0-2.9-.6-5-3.9-5-1.6 0-2.6.9-3.1 1.7V8.5Z" /></svg>
+          </a>
+          <a class="nav-cta" href="#playground">Try playground</a>
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-navigation" data-nav-toggle>
+            <span class="visually-hidden">Toggle navigation</span>
+            <i></i><i></i>
+          </button>
+        </div>
+      </nav>
+
+      <div class="nav-mobile" id="mobile-navigation" data-nav-mobile hidden>
+        <a href="#how-it-works">Product</a>
+        <a href="#use-cases">Use cases</a>
+        <a href="#" data-mock-link>Pricing <small>SOON</small></a>
+        <a href="#" data-mock-link>Enterprise <small>SOON</small></a>
+        <a href="/docs/">Documentation</a>
+        <a href="#about">About</a>
+      </div>
+    </header>
+
+    <main class="site-main">
+    <section class="hero" id="home">
+      <div class="gradient-stripes" aria-hidden="true">
+        <span class="stripe stripe-one"></span>
+        <span class="stripe stripe-two"></span>
+        <span class="stripe stripe-three"></span>
+        <span class="stripe stripe-four"></span>
+      </div>
+
+      <div class="pixel-grid" aria-hidden="true"></div>
+      <canvas
+        class="graph-background"
+        id="graph-background"
+        aria-hidden="true"
+      ></canvas>
+
+      <section class="hero-content" aria-labelledby="hero-title">
+        <p class="category">MULTIMODAL CONTEXT INFRASTRUCTURE</p>
+
+        <h1 id="hero-title" class="hero-title">
+          Context graphs for agents<br />
+          that need to reason.
+        </h1>
+
+        <p class="hero-description">
+          <span>Turns multimodal data into queryable knowledge graphs.</span>
+          <span>Agents can traverse relationships, reason across sources, and cite the evidence.</span>
+        </p>
+
+        <div class="hero-actions" aria-label="OpenGraph AI actions">
+          <a class="hero-button hero-button-primary" href="#playground">
+            <span class="terminal-mark" aria-hidden="true">&gt;_</span>
+            <span>Try the playground</span>
+          </a>
+          <a
+            class="hero-button hero-button-secondary"
+            href="/docs/"
+          >
+            <span>Read documentation</span>
+            <span class="external-mark" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+
+      <div class="corner-label corner-bottom" aria-hidden="true">OPEN SOURCE · APACHE 2.0</div>
+    </section>
+
+    <section class="compiler-section" id="how-it-works" aria-labelledby="compiler-title">
+      <div class="compiler-shell">
+        <header class="compiler-header">
+          <div class="compiler-intro">
+            <h2 id="compiler-title">OpenGraph AI works with coding agents.</h2>
+            <div class="compiler-supporting-copy">
+              <h3>Build context graphs, inspect relationships, trace coverage gaps, and query cited evidence.</h3>
+              <p class="compiler-description">
+                Give your coding agent a connected view of your workspace instead of another pile of isolated search results.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div class="compiler-rail" data-active-stage="0" hidden>
+          <div class="pipeline-orbit" aria-hidden="true">
+            <svg class="pipeline-svg" viewBox="0 0 1200 96" preserveAspectRatio="xMidYMid meet">
+              <path
+                class="pipeline-path"
+                d="M40 48 C 220 48 240 20 420 30 S 640 76 780 52 S 1010 30 1160 44"
+              />
+              <circle class="pipeline-tracer" r="7" />
+            </svg>
+          </div>
+
+          <div class="compiler-stages">
+            <article class="compiler-stage stage-ingest is-active" tabindex="0" data-stage="0">
+              <div class="stage-meta">
+                <span>INPUT LAYER</span>
+                <span class="stage-state">ACTIVE</span>
+              </div>
+              <div class="stage-copy">
+                <p class="stage-command"><span class="tok-obj">source</span><span class="tok-punct">.</span><span class="tok-fn">add</span><span class="tok-punct">(</span><span class="tok-arg">any</span><span class="tok-punct">)</span></p>
+                <h3>Any data in.</h3>
+                <p>Documents, tables and media enter one multimodal pipeline.</p>
+              </div>
+              <div class="ingest-visual" aria-hidden="true">
+                <div class="source-stack">
+                  <span class="source-card"><b>WAV</b><small>q3_call.wav</small><i></i></span>
+                  <span class="source-card"><b>CSV</b><small>signals.csv</small><i></i></span>
+                  <span class="source-card"><b>PDF</b><small>renewal.pdf</small><i></i></span>
+                  <span class="source-card"><b>JSON</b><small>account.json</small><i></i></span>
+                </div>
+                <svg class="ingest-connectors" viewBox="0 0 260 210" preserveAspectRatio="none">
+                  <path d="M176 48 C211 48 211 105 240 105" />
+                  <path d="M176 88 C208 88 215 105 240 105" />
+                  <path d="M176 128 C208 128 215 105 240 105" />
+                  <path d="M176 168 C211 168 211 105 240 105" />
+                  <circle class="ingest-packet" r="4" />
+                  <circle class="ingest-packet" r="4" />
+                  <circle class="ingest-packet" r="4" />
+                  <circle class="ingest-packet" r="4" />
+                </svg>
+                <span class="ingest-core"><i></i><b>+</b></span>
+              </div>
+            </article>
+
+            <article class="compiler-stage stage-extract" tabindex="0" data-stage="1">
+              <div class="stage-meta">
+                <span>ENTITY GRAPH</span>
+                <span class="stage-state">QUEUED</span>
+              </div>
+              <div class="stage-copy">
+                <p class="stage-command"><span class="tok-obj">graph</span><span class="tok-punct">.</span><span class="tok-fn">resolve</span><span class="tok-punct">(</span><span class="tok-arg">cross_modal</span><span class="tok-punct">)</span></p>
+                <h3>Context becomes connected.</h3>
+                <p>Entities, relations and citations resolve into one traversable graph.</p>
+              </div>
+              <div class="graph-workbench">
+                <svg
+                  class="graph-map"
+                  data-graph-map
+                  viewBox="0 0 360 210"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  aria-label="Four ingested sources resolving into a customer churn entity with cited pricing and risk relationships"
+                ></svg>
+              </div>
+            </article>
+
+            <article class="compiler-stage stage-query" tabindex="0" data-stage="2">
+              <div class="stage-meta">
+                <span>AGENT INTERFACE</span>
+                <span class="stage-state">QUEUED</span>
+              </div>
+              <div class="stage-copy">
+                <p class="stage-command"><span class="tok-obj">agent</span><span class="tok-punct">.</span><span class="tok-fn">query</span><span class="tok-punct">(</span><span class="tok-arg">natural_language</span><span class="tok-punct">)</span></p>
+                <h3>Answers with evidence.</h3>
+                <p>Traverse relationships, rank the subgraph and return the citation path.</p>
+              </div>
+              <div class="query-console claude-code-window" aria-label="Claude Code querying OpenGraph AI">
+                <div class="claude-mockup-welcome">
+                  <span class="claude-mockup-welcome-label">Claude Code</span>
+                  <h4>Welcome back User!</h4>
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="img"
+                    aria-labelledby="claude-clawd-title"
+                  >
+                    <title id="claude-clawd-title">Claude clawd</title>
+                    <path d="M4.5 6h15v5H22v2h-2.5v3h-1v2H17v-2h-1v2h-1.5v-2h-5v2H8v-2H7v2H5.5v-2h-1v-3H2v-2h2.5ZM7 8v3h1V8Zm9 0v3h1V8Z"></path>
+                  </svg>
+                  <p>
+                    <span>Sonnet 5 with medium effort</span>
+                    <span>Claude Pro</span>
+                    <span>C:\Users\User</span>
+                  </p>
+                </div>
+
+                <div class="claude-mockup" aria-label="Claude Code terminal response">
+                  <div class="claude-mockup-notice">
+                    <b>!!</b>
+                    <strong>OpenGraph MCP Connected</strong>
+                    <span>·</span>
+                    <span>run /mcp</span>
+                  </div>
+
+                  <div class="claude-mockup-banner">
+                    <i aria-hidden="true"></i>
+                    <p>
+                      Tackle your toughest work with Opus 5. Switch anytime with /model.
+                      <small>+1 more · /status</small>
+                    </p>
+                  </div>
+
+                  <div class="claude-mockup-command">
+                    <span>&gt;</span>
+                    <b data-query-prompt>which renewals are at risk?</b>
+                    <i class="claude-mockup-command-caret" aria-hidden="true"></i>
+                  </div>
+
+                  <div class="claude-mockup-output">
+                    <div class="claude-mockup-response-state">
+                      <p class="claude-mockup-working" data-query-working>
+                        <i aria-hidden="true"></i>
+                        <span>Traversing relationships and ranking cited evidence…</span>
+                      </p>
+                      <p class="claude-mockup-result-heading">
+                        <span aria-hidden="true">●</span>
+                        <b>Found 3 cited signals</b>
+                        <small>Ranked by graph confidence</small>
+                      </p>
+                    </div>
+
+                    <div class="claude-mockup-results">
+                      <div class="claude-mockup-result">
+                        <b>Renewal risk</b>
+                        <strong>0.94</strong>
+                        <small><span>WAV</span> q3_call.wav</small>
+                        <i><b style="--score: 94%"></b></i>
+                      </div>
+                      <div class="claude-mockup-result">
+                        <b>Pricing concern</b>
+                        <strong>0.89</strong>
+                        <small><span>CSV</span> signals.csv</small>
+                        <i><b style="--score: 89%"></b></i>
+                      </div>
+                      <div class="claude-mockup-result">
+                        <b>Owner: Priya R.</b>
+                        <strong>0.86</strong>
+                        <small><span>JSON</span> account.json</small>
+                        <i><b style="--score: 86%"></b></i>
+                      </div>
+                    </div>
+
+                    <p class="claude-mockup-followup">Want different language or task? Say word.</p>
+                    <p class="claude-mockup-timing"><span aria-hidden="true">∗</span> Worked for 4s</p>
+                  </div>
+
+                  <div class="claude-mockup-prompt">
+                    <span>&gt;</span>
+                    <i aria-hidden="true"></i>
+                  </div>
+
+                  <div class="claude-mockup-status">
+                    <b>[CAVEMAN]</b>
+                    <span><i aria-hidden="true">Ⅱ</i> manual mode on · ← for agents</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="benefit-section" id="use-cases" aria-labelledby="benefit-title">
+      <div class="benefit-shell">
+        <header class="benefit-header">
+          <div>
+            <h2 id="benefit-title">More context.<br />Less overhead.</h2>
+          </div>
+        </header>
+
+        <div class="benefit-bento">
+          <article class="benefit-bento-item benefit-bento-item-agent" data-benefit-card>
+            <div class="benefit-bento-copy">
+              <p>AGENT INTERFACE</p>
+              <h3>Works inside your agent.</h3>
+              <span>Prompt naturally. OpenGraph builds and queries the connected context behind the answer.</span>
+            </div>
+            <div class="benefit-bento-visual benefit-bento-agent">
+              <iframe
+                src="/mockups/claude-code/index.html?theme=light&amp;demo=prompt"
+                title="Claude Code prompting OpenGraph AI"
+                loading="lazy"
+                tabindex="-1"
+              ></iframe>
+            </div>
+          </article>
+
+          <article class="benefit-bento-item benefit-bento-item-wide" data-benefit-card>
+            <div class="benefit-bento-visual benefit-bento-flow" aria-hidden="true">
+              <span></span><span></span><span></span>
+              <i></i><i></i>
+            </div>
+            <div class="benefit-bento-copy">
+              <p>PLACEHOLDER 01</p>
+              <h3>Feature title</h3>
+              <span>Supporting description will go here.</span>
+            </div>
+          </article>
+
+          <article class="benefit-bento-item benefit-bento-item-orbit" data-benefit-card>
+            <div class="benefit-bento-copy">
+              <p>PLACEHOLDER 03</p>
+              <h3>Feature title</h3>
+              <span>Supporting description will go here.</span>
+            </div>
+            <div class="benefit-bento-visual benefit-bento-globe" aria-hidden="true">
+              <i></i><span></span>
+            </div>
+          </article>
+
+          <article class="benefit-bento-item benefit-bento-item-full" data-benefit-card>
+            <div class="benefit-bento-copy">
+              <p>PLACEHOLDER 04</p>
+              <h3>Feature title</h3>
+              <span>Supporting description will go here.</span>
+            </div>
+            <div class="benefit-bento-visual benefit-bento-dashboard" aria-hidden="true">
+              <i></i>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="command-section" id="resources" aria-labelledby="command-title">
+      <span class="section-anchor" id="playground" aria-hidden="true"></span>
+      <div class="command-shell">
+        <header class="command-header">
+          <p class="command-eyebrow"><i aria-hidden="true"></i> DEVELOPER WORKFLOW</p>
+          <h2 id="command-title">From raw context to a queryable graph.</h2>
+          <p>
+            Start from the terminal, connect your sources, and query the same
+            graph from the interface your agent already uses.
+          </p>
+
+        </header>
+
+        <div class="terminal-window" data-terminal-demo aria-label="OpenGraph AI command line walkthrough">
+          <div class="terminal-toolbar">
+            <span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="terminal-title">opengraph — CLI</span>
+            <span aria-hidden="true"></span>
+          </div>
+
+          <div class="terminal-modebar" role="tablist" aria-label="OpenGraph interfaces">
+            <button
+              class="terminal-mode-button is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="terminal-transcript"
+              data-terminal-mode="cli"
+            ><span>CLI</span></button>
+            <button
+              class="terminal-mode-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="terminal-transcript"
+              data-terminal-mode="mcp"
+            ><span>MCP</span></button>
+            <button
+              class="terminal-mode-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="terminal-transcript"
+              data-terminal-mode="rest"
+            ><span>REST API</span></button>
+            <button
+              class="terminal-mode-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="terminal-transcript"
+              data-terminal-mode="skill"
+            ><span>AGENT SKILL</span></button>
+          </div>
+
+          <div class="terminal-transcript" id="terminal-transcript" data-terminal-transcript role="tabpanel" aria-live="polite">
+            <header class="terminal-profile">
+              <h3 data-terminal-heading>CLI</h3>
+              <p data-terminal-description>
+                One binary. Pipe anything in, get a queryable graph out. Perfect for scripts, CI, and local exploration.
+              </p>
+            </header>
+            <pre class="terminal-code"><code data-terminal-code></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-section" id="about" aria-labelledby="about-title">
+      <div class="about-shell">
+        <header class="about-header">
+          <p class="about-eyebrow"><i aria-hidden="true"></i> ABOUT</p>
+          <h2 id="about-title">The open context layer for reasoning agents.</h2>
+          <p class="about-lede">
+            We started OpenGraph AI because retrieval-augmented agents are stuck
+            on text. Real problems live across tables, slides, recordings, and
+            screenshots — and the answers live in the
+            <em>relationships</em> between them. We're building a single, open
+            graph layer so agents can reason across all of it.
+          </p>
+        </header>
+
+        <div class="about-body">
+          <div class="about-principles">
+            <div class="principles-heading">
+              <h3>Open by design.</h3>
+              <p class="principles-intro">
+                One context layer, designed to fit the stack you already trust.
+              </p>
+            </div>
+            <ul>
+              <li>
+                <b>Portable by default.</b>
+                <span>Self-host the Apache-2.0 core or use the hosted service. Keep the same graph contract either way.</span>
+              </li>
+              <li>
+                <b>Connect every signal.</b>
+                <span>Bring text, tables, images, audio, video, and code into one relationship model.</span>
+              </li>
+              <li>
+                <b>Bring your own stack.</b>
+                <span>Choose the extractors, models, embeddings, and graph store. OpenGraph coordinates the path between them.</span>
+              </li>
+              <li>
+                <b>One interface for context.</b>
+                <span>Give agents relationships and evidence through one tool—not another service they need to supervise.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="about-contact">
+            <h3>Talk to us</h3>
+            <p class="contact-lede">
+              Looking for design partners, especially teams building research
+              agents and enterprise memory.
+            </p>
+
+            <!-- No backend in this repo: the action is a plain mailto fallback
+                 and main.js upgrades submit to a prefilled mail draft. -->
+            <form
+              class="contact-form"
+              data-contact-form
+              action="mailto:hello@opengraphai.io"
+              method="post"
+              enctype="text/plain"
+            >
+              <div class="contact-row">
+                <p class="contact-field">
+                  <label for="contact-name">Name</label>
+                  <input
+                    id="contact-name"
+                    name="name"
+                    type="text"
+                    placeholder="Ada Lovelace"
+                    autocomplete="name"
+                    required
+                  />
+                </p>
+                <p class="contact-field">
+                  <label for="contact-email">Email</label>
+                  <input
+                    id="contact-email"
+                    name="email"
+                    type="email"
+                    placeholder="ada@example.com"
+                    autocomplete="email"
+                    required
+                  />
+                </p>
+              </div>
+
+              <p class="contact-field">
+                <label for="contact-building">What are you building?</label>
+                <textarea
+                  id="contact-building"
+                  name="building"
+                  rows="3"
+                  placeholder="A research agent that has to cite its sources."
+                ></textarea>
+              </p>
+
+              <div class="contact-divider" aria-hidden="true"></div>
+
+              <button class="contact-send" type="submit" data-send-button data-state="idle">
+                <span class="send-label">Send message &rarr;</span>
+                <span class="send-spinner" aria-hidden="true"></span>
+                <span class="send-done" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M5 12.5l4.4 4.5L19 7" /></svg>
+                  Draft opened
+                </span>
+                <span class="send-glow" aria-hidden="true"><i></i><i></i></span>
+              </button>
+              <span class="contact-status" data-contact-status role="status" aria-live="polite"></span>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+    </main>
+
+    <footer class="site-footer" aria-labelledby="footer-title">
+      <h2 class="visually-hidden" id="footer-title">OpenGraph AI site links</h2>
+      <div class="footer-shell">
+        <div class="footer-brand">
+          <p class="footer-wordmark"><i aria-hidden="true">✕</i> OpenGraph <b>AI</b></p>
+          <p>
+            Heterogeneous data into queryable knowledge graphs. Context for
+            agents that need to reason.
+          </p>
+        </div>
+
+        <nav class="footer-column" aria-label="Product">
+          <p class="footer-heading">PRODUCT</p>
+          <a href="#home">Home</a>
+          <a href="#playground">Playground</a>
+        </nav>
+
+        <nav class="footer-column" aria-label="Community">
+          <p class="footer-heading">COMMUNITY</p>
+          <a href="https://www.linkedin.com/company/opengraph-ai/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://opengraphai.io" target="_blank" rel="noopener noreferrer">Website</a>
+        </nav>
+
+        <nav class="footer-column" aria-label="Developers">
+          <p class="footer-heading">DEVELOPERS</p>
+          <a href="/docs/">Documentation</a>
+          <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </div>
+
+      <div class="footer-base">
+        <span>OPEN SOURCE · APACHE 2.0</span>
+        <span>© 2026 OpenGraph AI</span>
+      </div>
+    </footer>
+
+    <button class="to-top-button" type="button" data-to-top aria-label="Back to the top">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" />
+      </svg>
+      <span>TOP</span>
+    </button>
+
+    <div class="modalities-overlay" data-modalities-overlay hidden aria-hidden="true">
+      <section
+        class="modalities-dialog"
+        id="multimodal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="multimodal-dialog-title"
+        tabindex="-1"
+      >
+        <button class="modalities-close" type="button" data-modalities-close aria-label="Close multimodal details">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+
+        <div class="modalities-dialog-copy">
+          <div class="modalities-dialog-kicker">
+            <span><i aria-hidden="true">✦</i> MULTIMODAL BY DESIGN</span>
+            <em>05 → 01</em>
+          </div>
+
+          <h2 id="multimodal-dialog-title">Five kinds of context. One place to reason.</h2>
+          <p class="modalities-dialog-description">
+            OpenGraph AI understands each source in its native form, then connects
+            what they say into context an agent can query and cite.
+          </p>
+
+          <ul class="modality-detail-grid">
+            <li>
+              <h3>Text</h3>
+              <p>Documents, PDFs, and URLs become entities, concepts, and source-backed claims.</p>
+            </li>
+            <li>
+              <h3>Tables</h3>
+              <p>Rows and columns become structured records with explicit relationships.</p>
+            </li>
+            <li>
+              <h3>Images</h3>
+              <p>Objects, labels, and visual context join the same connected entity space.</p>
+            </li>
+            <li>
+              <h3>Audio</h3>
+              <p>Calls and recordings become searchable speakers, signals, and referenced facts.</p>
+            </li>
+            <li>
+              <h3>Video</h3>
+              <p>Scenes and time-based events connect back to people, objects, and claims.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
