@@ -46,12 +46,10 @@
               <a href="#use-cases"><b>Multimodal RAG</b><span>Reason across every source</span></a>
             </div>
           </details>
-          <a class="nav-link" href="#" data-mock-link>Pricing</a>
-          <a class="nav-link" href="#" data-mock-link>Enterprise</a>
           <details class="nav-dropdown">
             <summary>Resources <span class="nav-chevron" aria-hidden="true"></span></summary>
             <div class="nav-popover nav-popover-right">
-              <a href="/docs/"><b>Documentation</b><span>Guides and API reference</span></a>
+              <a href="%BASE_URL%docs/"><b>Documentation</b><span>Guides and API reference</span></a>
               <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer"><b>GitHub</b><span>Source, issues, and releases</span></a>
               <a href="#about"><b>About</b><span>Why we're building OpenGraph</span></a>
             </div>
@@ -76,9 +74,7 @@
       <div class="nav-mobile" id="mobile-navigation" data-nav-mobile hidden>
         <a href="#how-it-works">Product</a>
         <a href="#use-cases">Use cases</a>
-        <a href="#" data-mock-link>Pricing <small>SOON</small></a>
-        <a href="#" data-mock-link>Enterprise <small>SOON</small></a>
-        <a href="/docs/">Documentation</a>
+        <a href="%BASE_URL%docs/">Documentation</a>
         <a href="#about">About</a>
       </div>
     </header>
@@ -100,8 +96,6 @@
       ></canvas>
 
       <section class="hero-content" aria-labelledby="hero-title">
-        <p class="category">MULTIMODAL CONTEXT INFRASTRUCTURE</p>
-
         <h1 id="hero-title" class="hero-title">
           Context graphs for agents<br />
           that need to reason.
@@ -119,7 +113,7 @@
           </a>
           <a
             class="hero-button hero-button-secondary"
-            href="/docs/"
+            href="%BASE_URL%docs/"
           >
             <span>Read documentation</span>
             <span class="external-mark" aria-hidden="true">↗</span>
@@ -127,7 +121,6 @@
         </div>
       </section>
 
-      <div class="corner-label corner-bottom" aria-hidden="true">OPEN SOURCE · APACHE 2.0</div>
     </section>
 
     <section class="compiler-section" id="how-it-works" aria-labelledby="compiler-title">
@@ -143,6 +136,13 @@
             </div>
           </div>
         </header>
+
+        <figure
+          class="graph-loop"
+          data-graph-loop
+          role="img"
+          aria-label="Documents, tables, audio, images, code and databases turn into a knowledge graph; an agent's query traces a cited evidence path back to its sources."
+        ><canvas></canvas></figure>
 
         <div class="compiler-rail" data-active-stage="0" hidden>
           <div class="pipeline-orbit" aria-hidden="true">
@@ -326,13 +326,12 @@
         <div class="benefit-bento">
           <article class="benefit-bento-item benefit-bento-item-agent" data-benefit-card>
             <div class="benefit-bento-copy">
-              <p>AGENT INTERFACE</p>
               <h3>Works inside your agent.</h3>
               <span>Prompt naturally. OpenGraph builds and queries the connected context behind the answer.</span>
             </div>
             <div class="benefit-bento-visual benefit-bento-agent">
               <iframe
-                src="/mockups/claude-code/index.html?theme=light&amp;demo=prompt"
+                src="%BASE_URL%mockups/claude-code/index.html?theme=light&amp;demo=prompt"
                 title="Claude Code prompting OpenGraph AI"
                 loading="lazy"
                 tabindex="-1"
@@ -346,17 +345,15 @@
               <i></i><i></i>
             </div>
             <div class="benefit-bento-copy">
-              <p>PLACEHOLDER 01</p>
-              <h3>Feature title</h3>
-              <span>Supporting description will go here.</span>
+              <h3>Every source, one graph.</h3>
+              <span>Connect documents, tables, images, audio, video, and code through shared entities and relationships.</span>
             </div>
           </article>
 
           <article class="benefit-bento-item benefit-bento-item-orbit" data-benefit-card>
             <div class="benefit-bento-copy">
-              <p>PLACEHOLDER 03</p>
-              <h3>Feature title</h3>
-              <span>Supporting description will go here.</span>
+              <h3>Retrieve relationships.</h3>
+              <span>Traverse typed edges for multi-hop, entity-centric questions alongside the vector search you already use.</span>
             </div>
             <div class="benefit-bento-visual benefit-bento-globe" aria-hidden="true">
               <i></i><span></span>
@@ -365,9 +362,8 @@
 
           <article class="benefit-bento-item benefit-bento-item-full" data-benefit-card>
             <div class="benefit-bento-copy">
-              <p>PLACEHOLDER 04</p>
-              <h3>Feature title</h3>
-              <span>Supporting description will go here.</span>
+              <h3>Trace answers to evidence.</h3>
+              <span>Keep source provenance attached to relationships so agents can return paths, citations, and supporting context.</span>
             </div>
             <div class="benefit-bento-visual benefit-bento-dashboard" aria-hidden="true">
               <i></i>
@@ -382,7 +378,6 @@
       <span class="section-anchor" id="playground" aria-hidden="true"></span>
       <div class="command-shell">
         <header class="command-header">
-          <p class="command-eyebrow"><i aria-hidden="true"></i> DEVELOPER WORKFLOW</p>
           <h2 id="command-title">From raw context to a queryable graph.</h2>
           <p>
             Start from the terminal, connect your sources, and query the same
@@ -395,7 +390,16 @@
           <div class="terminal-toolbar">
             <span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="terminal-title">opengraph — CLI</span>
-            <span aria-hidden="true"></span>
+            <button class="terminal-copy" type="button" data-terminal-copy aria-label="Copy CLI code" title="Copy code">
+              <svg class="terminal-copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+              </svg>
+              <svg class="terminal-copy-success" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 12 4 4 8-9"></path>
+              </svg>
+              <span class="visually-hidden" aria-live="polite">Copy</span>
+            </button>
           </div>
 
           <div class="terminal-modebar" role="tablist" aria-label="OpenGraph interfaces">
@@ -449,7 +453,6 @@
     <section class="about-section" id="about" aria-labelledby="about-title">
       <div class="about-shell">
         <header class="about-header">
-          <p class="about-eyebrow"><i aria-hidden="true"></i> ABOUT</p>
           <h2 id="about-title">The open context layer for reasoning agents.</h2>
           <p class="about-lede">
             We started OpenGraph AI because retrieval-augmented agents are stuck
@@ -583,7 +586,7 @@
 
         <nav class="footer-column" aria-label="Developers">
           <p class="footer-heading">DEVELOPERS</p>
-          <a href="/docs/">Documentation</a>
+          <a href="%BASE_URL%docs/">Documentation</a>
           <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </div>
@@ -598,7 +601,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" />
       </svg>
-      <span>TOP</span>
     </button>
 
     <div class="modalities-overlay" data-modalities-overlay hidden aria-hidden="true">
@@ -617,11 +619,6 @@
         </button>
 
         <div class="modalities-dialog-copy">
-          <div class="modalities-dialog-kicker">
-            <span><i aria-hidden="true">✦</i> MULTIMODAL BY DESIGN</span>
-            <em>05 → 01</em>
-          </div>
-
           <h2 id="multimodal-dialog-title">Five kinds of context. One place to reason.</h2>
           <p class="modalities-dialog-description">
             OpenGraph AI understands each source in its native form, then connects
@@ -655,5 +652,6 @@
     </div>
 
     <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/graph-loop/mount.js"></script>
   </body>
 </html>

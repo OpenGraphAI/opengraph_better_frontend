@@ -1,0 +1,54 @@
+name: Build and deploy frontend
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      # Publish this launch PR for review; main becomes the ongoing source.
+      - codex/updated-frontend-website
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend_website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend_website/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_BASE_PATH: /opengraph_better_frontend/
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: frontend_website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

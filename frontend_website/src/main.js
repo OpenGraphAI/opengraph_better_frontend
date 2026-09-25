@@ -1149,6 +1149,8 @@ function initialiseTerminalDemo() {
   const heading = terminal?.querySelector("[data-terminal-heading]");
   const description = terminal?.querySelector("[data-terminal-description]");
   const code = terminal?.querySelector("[data-terminal-code]");
+  const copyButton = terminal?.querySelector("[data-terminal-copy]");
+  const copyLabel = copyButton?.querySelector("span");
   const modeButtons = [...(terminal?.querySelectorAll("[data-terminal-mode]") || [])];
   if (!terminal || !transcript || !code) return;
 
@@ -1215,6 +1217,9 @@ agent.run("which customers mentioned pricing in Q3?")`,
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let activeRun = 0;
+  let activeCode = sequences.cli.code;
+  let activeLabel = sequences.cli.label;
+  let copyResetTimer = 0;
   let hasEntered = false;
 
   const tokenPattern = /(#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|https?:\/\/[^\s'"\\]+|--?[\w-]+|\b(?:from|import|as)\b|\b(?:curl|claude|extract_graph|query_graph|summarize_graph|sync_graph_to_vector_db|create_agent|GraphSkill|run)\b|\b(?:opengraph|mcp|add|npx)\b)/g;
@@ -1260,6 +1265,40 @@ agent.run("which customers mentioned pricing in Q3?")`,
     });
   };
 
+  const setCopyState = (state = "idle") => {
+    if (!copyButton || !copyLabel) return;
+    const feedback = state === "copied" ? "Copied" : state === "error" ? "Copy unavailable" : "Copy";
+    copyButton.dataset.state = state;
+    copyLabel.textContent = feedback;
+    copyButton.title = feedback;
+    copyButton.setAttribute(
+      "aria-label",
+      state === "copied"
+        ? `${activeLabel} code copied`
+        : state === "error"
+          ? `${activeLabel} code could not be copied`
+          : `Copy ${activeLabel} code`,
+    );
+  };
+
+  const copyToClipboard = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const fallback = document.createElement("textarea");
+    fallback.value = value;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.append(fallback);
+    fallback.select();
+    const copied = document.execCommand("copy");
+    fallback.remove();
+    if (!copied) throw new Error("Clipboard copy failed");
+  };
+
   const run = (mode = "cli") => {
     const session = sequences[mode] || sequences.cli;
     const runId = ++activeRun;
@@ -1268,6 +1307,10 @@ agent.run("which customers mentioned pricing in Q3?")`,
     if (title) title.textContent = session.title;
     if (heading) heading.textContent = session.label;
     if (description) description.textContent = session.description;
+    activeCode = session.code;
+    activeLabel = session.label;
+    window.clearTimeout(copyResetTimer);
+    setCopyState();
     code.replaceChildren(...session.code.split("\n").map((line) => buildCodeLine(line, session.language)));
     transcript.scrollTop = 0;
 
@@ -1298,6 +1341,17 @@ agent.run("which customers mentioned pricing in Q3?")`,
       next.focus();
       run(next.dataset.terminalMode);
     });
+  });
+
+  copyButton?.addEventListener("click", async () => {
+    window.clearTimeout(copyResetTimer);
+    try {
+      await copyToClipboard(activeCode);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    copyResetTimer = window.setTimeout(() => setCopyState(), 1800);
   });
 
   const observer = new IntersectionObserver((entries) => {
