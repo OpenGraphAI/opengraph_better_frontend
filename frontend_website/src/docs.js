@@ -15,7 +15,6 @@ import {
   ExternalLink,
   FileCode2,
   GitFork,
-  Globe,
   Image as ImageIcon,
   Menu,
   Moon,
@@ -32,6 +31,7 @@ import {
   createIcons,
 } from "lucide";
 import "./docs.css";
+import { docsPages, docsSchema, siteUrl } from "./site-metadata.js";
 
 import summaryMarkdown from "../docs/content/SUMMARY.md?raw";
 import introductionMarkdown from "../docs/content/README.md?raw";
@@ -73,7 +73,6 @@ const iconSet = {
   ExternalLink,
   FileCode2,
   GitFork,
-  Globe,
   Image: ImageIcon,
   Menu,
   Moon,
@@ -134,6 +133,23 @@ const groups = parseSummary(summaryMarkdown);
 const pages = groups.flatMap((group) => group.pages);
 const pageBySlug = new Map(pages.map((page) => [page.slug, page]));
 const pageBySource = new Map(pages.map((page) => [page.source, page]));
+const metadataBySlug = new Map(docsPages.map((page) => [page.slug, page]));
+const pathFor = (slug) => metadataBySlug.get(slug)?.path || "/docs/";
+const cleanSearchLine = (line) => line
+  .replace(/```.*|<[^>]+>|[#>*_`|]/g, " ")
+  .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+  .replace(/\s+/g, " ")
+  .trim();
+const searchIndex = pages.map((page) => {
+  const lines = page.markdown.split("\n").map(cleanSearchLine).filter((line) => line.length > 2);
+  return {
+    page,
+    lines,
+    title: page.title.toLowerCase(),
+    group: page.group.toLowerCase(),
+    text: `${page.title} ${page.group} ${lines.join(" ")}`.toLowerCase(),
+  };
+});
 
 const nav = document.querySelector("[data-docs-nav]");
 const article = document.querySelector("[data-docs-article]");
@@ -157,7 +173,6 @@ const assistantInput = document.querySelector("[data-assistant-input]");
 const assistantContext = document.querySelector("[data-assistant-context]");
 const assistantContextLabel = document.querySelector("[data-assistant-context-label]");
 const assistantClear = document.querySelector("[data-assistant-clear]");
-const assistantSearchToggle = document.querySelector("[data-assistant-search-toggle]");
 const assistantInputShell = document.querySelector("[data-assistant-input-shell]");
 const assistantSend = document.querySelector("[data-assistant-send]");
 
@@ -165,7 +180,6 @@ let showingMarkdown = false;
 let activeSlug = "";
 let toastTimer;
 let attachedCode = "";
-let webSearchEnabled = true;
 
 const assistantMinHeight = 52;
 const assistantMaxHeight = 200;
@@ -186,7 +200,7 @@ function renderNavigation() {
     <section class="docs-nav-group">
       <h2>${escapeHtml(group.title)}</h2>
       ${group.pages.map((page) => `
-        <a class="docs-nav-link" href="#/${page.slug}" data-page-slug="${page.slug}">
+        <a class="docs-nav-link" href="${pathFor(page.slug)}" data-page-slug="${page.slug}">
           <i data-lucide="${pageIcons[page.slug] || "book-open"}" aria-hidden="true"></i>
           <span>${escapeHtml(page.title)}</span>
         </a>
@@ -231,7 +245,7 @@ function decorateArticle(page) {
     heading.dataset.tocLabel = label;
     const anchor = document.createElement("a");
     anchor.className = "heading-anchor";
-    anchor.href = `#/${page.slug}`;
+    anchor.href = `${pathFor(page.slug)}#${heading.id}`;
     anchor.setAttribute("aria-label", `Scroll to ${label}`);
     anchor.textContent = "#";
     anchor.addEventListener("click", (event) => {
@@ -247,7 +261,7 @@ function decorateArticle(page) {
 
     if (href.endsWith(".md")) {
       const target = pageBySource.get(normalizeSourcePath(page.source, href));
-      if (target) link.href = `#/${target.slug}`;
+      if (target) link.href = pathFor(target.slug);
       return;
     }
 
@@ -296,7 +310,7 @@ function decorateArticle(page) {
   });
 
   toc.innerHTML = headings.length
-    ? headings.map((heading) => `<a class="toc-${heading.tagName.toLowerCase()}" href="#/${page.slug}">${escapeHtml(heading.dataset.tocLabel)}</a>`).join("")
+    ? headings.map((heading) => `<a class="toc-${heading.tagName.toLowerCase()}" href="${pathFor(page.slug)}#${heading.id}">${escapeHtml(heading.dataset.tocLabel)}</a>`).join("")
     : '<span class="docs-toc-empty">Overview</span>';
 
   toc.querySelectorAll("a").forEach((link, index) => {
@@ -311,14 +325,18 @@ function renderPager(activeIndex) {
   const previous = pages[activeIndex - 1];
   const next = pages[activeIndex + 1];
   pager.innerHTML = `
-    ${previous ? `<a href="#/${previous.slug}" class="pager-previous"><span>Previous</span><b><i data-lucide="arrow-left" aria-hidden="true"></i>${escapeHtml(previous.title)}</b></a>` : "<span></span>"}
-    ${next ? `<a href="#/${next.slug}" class="pager-next"><span>Next</span><b>${escapeHtml(next.title)}<i data-lucide="arrow-right" aria-hidden="true"></i></b></a>` : "<span></span>"}
+    ${previous ? `<a href="${pathFor(previous.slug)}" class="pager-previous"><span>Previous</span><b><i data-lucide="arrow-left" aria-hidden="true"></i>${escapeHtml(previous.title)}</b></a>` : "<span></span>"}
+    ${next ? `<a href="${pathFor(next.slug)}" class="pager-next"><span>Next</span><b>${escapeHtml(next.title)}<i data-lucide="arrow-right" aria-hidden="true"></i></b></a>` : "<span></span>"}
   `;
 }
 
 function currentPage() {
-  const slug = window.location.hash.replace(/^#\/?/, "").split("#")[0];
-  return pageBySlug.get(slug) || pages[0];
+  // Keep old shared hash links working while canonical links use real pages.
+  const legacySlug = window.location.hash.startsWith("#/") ? window.location.hash.slice(2).split("#")[0] : null;
+  if (legacySlug && pageBySlug.has(legacySlug)) history.replaceState(null, "", pathFor(legacySlug));
+  const path = window.location.pathname.replace(/\/index\.html$/, "/").replace(/\/?$/, "/");
+  const metadata = docsPages.find((page) => page.path === path);
+  return pageBySlug.get(metadata?.slug) || pages[0];
 }
 
 function markdownHeading(page) {
@@ -356,7 +374,7 @@ function renderPage() {
   updatePageActions();
 
   breadcrumbs.innerHTML = `
-    <a href="#/introduction">Docs</a>
+    <a href="/docs/">Docs</a>
     <span>/</span>
     <span>${escapeHtml(page.group)}</span>
     <span>/</span>
@@ -377,11 +395,26 @@ function renderPage() {
     else link.removeAttribute("aria-current");
   });
 
-  document.title = `${markdownHeading(page)} — OpenGraph AI Docs`;
+  const metadata = metadataBySlug.get(page.slug);
+  document.title = `${metadata.title} | OpenGraph AI`;
+  document.querySelector('link[rel="canonical"]').href = `${siteUrl}${metadata.path}`;
+  document.querySelector('meta[name="description"]').content = metadata.description;
+  document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach((meta) => { meta.content = document.title; });
+  document.querySelectorAll('meta[property="og:description"], meta[name="twitter:description"]').forEach((meta) => { meta.content = metadata.description; });
+  document.querySelector('meta[property="og:url"]').content = `${siteUrl}${metadata.path}`;
+  const schema = document.querySelector('script[type="application/ld+json"]');
+  if (schema) {
+    schema.textContent = JSON.stringify(docsSchema(metadata, markdownHeading(page)));
+  }
   window.scrollTo({ top: 0, behavior: "auto" });
   closeMenu();
   closeSearch();
   refreshIcons();
+  if (location.hash && !location.hash.startsWith("#/")) {
+    try {
+      scrollToHeading(document.getElementById(decodeURIComponent(location.hash.slice(1))));
+    } catch { /* Ignore malformed fragments in shared links. */ }
+  }
 }
 
 function setMenu(open) {
@@ -401,20 +434,27 @@ function closeSearch() {
 
 function renderSearch(query) {
   const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    closeSearch();
-    searchResults.innerHTML = "";
-    return;
-  }
-
-  const matches = pages.filter((page) => `${page.title} ${page.group} ${page.markdown}`.toLowerCase().includes(normalized)).slice(0, 6);
+  const terms = [...new Set(normalized.split(/\s+/).filter(Boolean))];
+  const matches = searchIndex
+    .filter((entry) => terms.every((term) => entry.text.includes(term)))
+    .map((entry) => ({
+      ...entry,
+      score: terms.reduce((score, term) => score
+        + (entry.title === term ? 30 : 0)
+        + (entry.title.includes(term) ? 12 : 0)
+        + (entry.group.includes(term) ? 4 : 0), 0),
+      snippet: entry.lines.find((line) => terms.some((term) => line.toLowerCase().includes(term)))
+        || metadataBySlug.get(entry.page.slug)?.description
+        || entry.lines[0],
+    }))
+    .sort((a, b) => b.score - a.score || pages.indexOf(a.page) - pages.indexOf(b.page));
   searchResults.innerHTML = matches.length
-    ? matches.map((page) => `
-      <a href="#/${page.slug}" role="option" data-search-result>
+    ? `<p class="docs-search-summary">${normalized ? `${matches.length} matching page${matches.length === 1 ? "" : "s"}` : `All documentation · ${matches.length} pages`}</p>${matches.map(({ page, snippet }) => `
+      <a href="${pathFor(page.slug)}" role="option" data-search-result>
         <i data-lucide="${pageIcons[page.slug] || "book-open"}" aria-hidden="true"></i>
-        <span><b>${escapeHtml(page.title)}</b><small>${escapeHtml(page.group)}</small></span>
+        <span><b>${escapeHtml(page.title)}</b><small>${escapeHtml(page.group)}</small><em>${escapeHtml(snippet.slice(0, 128))}</em></span>
       </a>
-    `).join("")
+    `).join("")}`
     : '<p>No documentation found.</p>';
   searchResults.classList.add("is-open");
   search.setAttribute("aria-expanded", "true");
@@ -487,7 +527,7 @@ function attachCode(code, language) {
 function clearAttachedCode() {
   attachedCode = "";
   assistantContext.hidden = true;
-  assistantInput.placeholder = "Ask about this page…";
+  assistantInput.placeholder = "Ask the documentation…";
 }
 
 function updateThemeButton() {
@@ -501,16 +541,23 @@ renderNavigation();
 updateThemeButton();
 renderPage();
 
-window.addEventListener("hashchange", renderPage);
+window.addEventListener("hashchange", () => {
+  if (location.hash.startsWith("#/")) renderPage();
+});
+window.addEventListener("popstate", renderPage);
+document.addEventListener("click", (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = event.target.closest("a[href]");
+  if (!link || link.target || link.hasAttribute("download")) return;
+  const url = new URL(link.href);
+  if (url.origin !== location.origin || !docsPages.some((page) => page.path === url.pathname)) return;
+  event.preventDefault();
+  history.pushState(null, "", url.pathname + url.hash);
+  renderPage();
+});
 menuButton.addEventListener("click", () => setMenu(!document.body.classList.contains("docs-menu-open")));
 backdrop.addEventListener("click", closeMenu);
 assistantClear.addEventListener("click", clearAttachedCode);
-
-assistantSearchToggle.addEventListener("click", () => {
-  webSearchEnabled = !webSearchEnabled;
-  assistantSearchToggle.classList.toggle("is-active", webSearchEnabled);
-  assistantSearchToggle.setAttribute("aria-pressed", String(webSearchEnabled));
-});
 
 assistantInput.addEventListener("input", () => {
   adjustAssistantHeight();
@@ -534,9 +581,8 @@ assistantForm.addEventListener("submit", (event) => {
     assistantInput.focus();
     return;
   }
-  const context = attachedCode ? "code attached" : "page context";
-  const searchMode = webSearchEnabled ? "web search on" : "web search off";
-  showToast(`Assistant API not connected — ${context}, ${searchMode}`);
+  const context = attachedCode ? "attached code and documentation" : "current documentation page";
+  showToast(`Assistant API not connected — query would use ${context}.`);
   assistantInput.value = "";
   adjustAssistantHeight(true);
   updateAssistantSend();
@@ -570,10 +616,11 @@ copyButton.addEventListener("click", async () => {
 });
 
 search.addEventListener("input", () => renderSearch(search.value));
+search.addEventListener("focus", () => renderSearch(search.value));
 search.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     const firstResult = searchResults.querySelector("[data-search-result]");
-    if (firstResult) window.location.hash = firstResult.getAttribute("href");
+    if (firstResult) firstResult.click();
   }
 });
 searchResults.addEventListener("click", closeSearch);

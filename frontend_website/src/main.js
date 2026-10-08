@@ -27,6 +27,10 @@ function smoothScrollToElement(target, options = {}) {
     : target.getBoundingClientRect().top + window.scrollY - offset;
   const destination = Math.max(0, Math.min(rawDestination, document.documentElement.scrollHeight - window.innerHeight));
   const distance = destination - start;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.scrollTo(0, destination);
+    return Promise.resolve(true);
+  }
   const duration = options.duration ?? Math.min(1150, Math.max(700, Math.abs(distance) * 0.34));
 
   if (Math.abs(distance) < 2) return Promise.resolve(true);
@@ -84,6 +88,7 @@ function initialiseMorphicNavbar() {
   const dropdowns = [...header.querySelectorAll(".nav-dropdown")];
   const toggle = header.querySelector("[data-nav-toggle]");
   const mobile = header.querySelector("[data-nav-mobile]");
+  const hoverNavigation = window.matchMedia("(hover: hover) and (pointer: fine)");
 
   const closeNavigation = () => {
     dropdowns.forEach((dropdown) => dropdown.removeAttribute("open"));
@@ -94,11 +99,31 @@ function initialiseMorphicNavbar() {
   };
 
   dropdowns.forEach((dropdown) => {
+    let hoverCloseTimer = 0;
+    const summary = dropdown.querySelector("summary");
+
     dropdown.addEventListener("toggle", () => {
       if (!dropdown.open) return;
       dropdowns.forEach((other) => {
         if (other !== dropdown) other.removeAttribute("open");
       });
+    });
+
+    dropdown.addEventListener("pointerenter", () => {
+      if (!hoverNavigation.matches) return;
+      window.clearTimeout(hoverCloseTimer);
+      dropdown.setAttribute("open", "");
+    });
+
+    dropdown.addEventListener("pointerleave", () => {
+      if (!hoverNavigation.matches) return;
+      hoverCloseTimer = window.setTimeout(() => dropdown.removeAttribute("open"), 100);
+    });
+
+    summary?.addEventListener("click", (event) => {
+      if (!hoverNavigation.matches || event.detail === 0) return;
+      event.preventDefault();
+      dropdown.setAttribute("open", "");
     });
   });
 
@@ -135,15 +160,14 @@ function initialiseMorphicNavbar() {
 }
 
 function initialiseScrollParallax() {
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const motionScale = reducedMotion ? 0.56 : 1;
+  if (window.matchMedia("(prefers-reduced-motion: reduce), (pointer: coarse)").matches) return;
   const layers = [];
   const register = (selector, speed, maxTravel = 30) => {
     document.querySelectorAll(selector).forEach((element, index) => {
       layers.push({
         element,
-        speed: (Array.isArray(speed) ? speed[index % speed.length] : speed) * motionScale,
-        maxTravel: maxTravel * motionScale,
+        speed: Array.isArray(speed) ? speed[index % speed.length] : speed,
+        maxTravel,
       });
       element.classList.add("is-parallax-layer");
     });
@@ -165,12 +189,16 @@ function initialiseScrollParallax() {
     parallaxFrame = 0;
     const viewportCenter = window.innerHeight / 2;
 
-    layers.forEach(({ element, speed, maxTravel }) => {
+    // Read every position before writing transforms to avoid forced layouts.
+    const positions = layers.map(({ element, speed, maxTravel }) => {
       const bounds = element.getBoundingClientRect();
-      if (bounds.bottom < -180 || bounds.top > window.innerHeight + 180) return;
+      if (bounds.bottom < -180 || bounds.top > window.innerHeight + 180) return null;
       const layerCenter = bounds.top + bounds.height / 2;
       const offset = clamp(-(layerCenter - viewportCenter) * speed, maxTravel);
-      element.style.setProperty("--parallax-y", `${offset.toFixed(2)}px`);
+      return { element, offset };
+    });
+    positions.forEach((position) => {
+      if (position) position.element.style.setProperty("--parallax-y", `${position.offset.toFixed(2)}px`);
     });
   };
 
@@ -214,15 +242,23 @@ function initialiseGraphBackground() {
   const canvas = document.querySelector("#graph-background");
   const context = canvas?.getContext("2d");
   if (!canvas || !context) return;
+  const staticCanvas = document.createElement("canvas");
+  const staticContext = staticCanvas.getContext("2d");
+  if (!staticContext) return;
   const hero = canvas.closest(".hero");
   if (!hero) return;
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let width = 0;
   let height = 0;
   let dpr = 1;
-  let particles = [];
+  let staticParticles = [];
+  let movingParticles = [];
   let frame = 0;
   let visible = true;
+  let lastDraw = -Infinity;
+  let ink = groundInkRgb();
+  let signal = themeToken("--signal-rgb", "36 87 214").replace(/\s+/g, ", ");
+  const frameInterval = 1000 / 24;
   const cursor = {
     x: -1000,
     y: -1000,
@@ -235,8 +271,9 @@ function initialiseGraphBackground() {
   };
 
   function buildSheet() {
-    particles = [];
-    const spacing = width < 640 ? 17 : 14;
+    staticParticles = [];
+    movingParticles = [];
+    const spacing = Math.max(18, Math.sqrt(width * height / 3400));
     const columns = Math.ceil(width / spacing) + 2;
     const rows = Math.ceil(height / spacing) + 2;
 
@@ -244,32 +281,89 @@ function initialiseGraphBackground() {
       for (let column = -1; column < columns; column += 1) {
         const seed = ((column * 73856093) ^ (row * 19349663)) >>> 0;
         const random = (seed % 1000) / 1000;
-        particles.push({
+        const particle = {
           x: column * spacing + (random - 0.5) * 4,
           y: row * spacing + (((seed >> 8) % 1000) / 1000 - 0.5) * 4,
           phase: random * Math.PI * 2,
           size: 1.05 + ((seed >> 5) % 9) * 0.11,
           accent: seed % 31 === 0,
           bright: seed % 97 === 0,
-        });
+        };
+        if (seed % 3 === 0 || particle.accent || particle.bright) movingParticles.push(particle);
+        else staticParticles.push(particle);
       }
     }
   }
 
+  function paintParticles(target, collection, time, interact = false) {
+    const paths = Array.from({ length: 16 }, () => new Path2D());
+    const influenceRadius = Math.min(240, Math.max(155, width * 0.16));
+    const speed = Math.hypot(cursor.velocityX, cursor.velocityY);
+    const swirl = Math.max(-34, Math.min(34, (cursor.velocityX - cursor.velocityY) * 1.4));
+
+    for (const particle of collection) {
+      const broadWave = Math.sin(particle.x * 0.011 + time * 1.7 + particle.phase * 0.16);
+      const crossWave = Math.sin((particle.x + particle.y) * 0.007 - time * 1.25 + particle.phase);
+      const ribbon = (1 - Math.abs(Math.sin(particle.x * 0.008 + particle.y * 0.004 - time))) ** 3;
+      let x = particle.x + Math.sin(particle.y * 0.012 - time + particle.phase * 0.1) * 9 + crossWave * 3;
+      let y = particle.y + broadWave * 21 + crossWave * 7;
+      let energy = Math.min(1, (broadWave + 1) * 0.32 + ribbon * 0.7);
+
+      if (interact) {
+        const deltaX = x - cursor.x;
+        const deltaY = y - cursor.y;
+        const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+        if (distanceSquared < influenceRadius * influenceRadius) {
+          const distance = Math.sqrt(distanceSquared);
+          const force = (1 - distance / influenceRadius) ** 1.55 * cursor.strength;
+          const angle = Math.atan2(deltaY, deltaX);
+          const ripple = Math.sin(distance * 0.082 - time * 11) * force;
+          x += Math.cos(angle) * force * 62 - Math.sin(angle) * force * swirl + cursor.velocityX * force * 0.8;
+          y += Math.sin(angle) * force * 62 + Math.cos(angle) * force * swirl + cursor.velocityY * force * 0.8 + ripple * 24;
+          energy = Math.min(1, energy + force * (2.1 + speed * 0.035));
+        }
+      }
+
+      const alpha = particle.accent ? 0.44 + energy * 0.52 : particle.bright ? 0.58 : 0.12 + energy * 0.27;
+      const bucket = Math.max(0, Math.min(7, Math.round(alpha * 8) - 1));
+      const path = paths[bucket + (particle.accent ? 8 : 0)];
+      const radius = particle.accent
+        ? particle.size * 0.95
+        : particle.size * (0.45 + energy * 0.18);
+      path.moveTo(x + radius, y);
+      path.arc(x, y, radius, 0, Math.PI * 2);
+    }
+
+    paths.forEach((path, index) => {
+      target.fillStyle = `rgba(${index < 8 ? ink : signal}, ${(index % 8 + 1) / 8})`;
+      target.fill(path);
+    });
+  }
+
   function resize() {
     const bounds = canvas.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.25);
     width = bounds.width;
     height = bounds.height;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
+    staticCanvas.width = canvas.width;
+    staticCanvas.height = canvas.height;
     buildSheet();
-    if (reducedMotion) draw(0);
+    ink = groundInkRgb();
+    signal = themeToken("--signal-rgb", "36 87 214").replace(/\s+/g, ", ");
+    staticContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+    staticContext.clearRect(0, 0, width, height);
+    paintParticles(staticContext, staticParticles, 0);
+    lastDraw = -Infinity;
+    if (motion.matches) draw(0);
   }
 
   function draw(timestamp) {
-    const ink = groundInkRgb();
-    const signal = themeToken("--signal-rgb", "36 87 214").replace(/\s+/g, ", ");
+    frame = 0;
+    if (!motion.matches && visible && !document.hidden) frame = requestAnimationFrame(draw);
+    if (timestamp - lastDraw < frameInterval - 1) return;
+    lastDraw = timestamp;
     const time = timestamp * 0.00034;
     cursor.x += (cursor.targetX - cursor.x) * 0.22;
     cursor.y += (cursor.targetY - cursor.y) * 0.22;
@@ -279,6 +373,7 @@ function initialiseGraphBackground() {
 
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.clearRect(0, 0, width, height);
+    context.drawImage(staticCanvas, 0, 0, width, height);
 
     if (cursor.active && cursor.strength > 0.02) {
       const glowRadius = Math.min(260, Math.max(170, width * 0.16));
@@ -290,43 +385,8 @@ function initialiseGraphBackground() {
       context.fillRect(cursor.x - glowRadius, cursor.y - glowRadius, glowRadius * 2, glowRadius * 2);
     }
 
-    for (const particle of particles) {
-      const broadWave = Math.sin(particle.x * 0.011 + time * 1.7 + particle.phase * 0.16);
-      const crossWave = Math.sin((particle.x + particle.y) * 0.007 - time * 1.25 + particle.phase);
-      const ribbon = (1 - Math.abs(Math.sin(particle.x * 0.008 + particle.y * 0.004 - time))) ** 3;
-      let x = particle.x + Math.sin(particle.y * 0.012 - time + particle.phase * 0.1) * 9 + crossWave * 3;
-      let y = particle.y + broadWave * 21 + crossWave * 7;
-      let energy = Math.min(1, (broadWave + 1) * 0.32 + ribbon * 0.7);
-
-      if (!reducedMotion) {
-        const deltaX = x - cursor.x;
-        const deltaY = y - cursor.y;
-        const distance = Math.hypot(deltaX, deltaY);
-        const radius = Math.min(240, Math.max(155, width * 0.16));
-        if (distance < radius) {
-          const force = (1 - distance / radius) ** 1.55 * cursor.strength;
-          const angle = Math.atan2(deltaY, deltaX);
-          const speed = Math.hypot(cursor.velocityX, cursor.velocityY);
-          const swirl = Math.max(-34, Math.min(34, (cursor.velocityX - cursor.velocityY) * 1.4));
-          const ripple = Math.sin(distance * 0.082 - time * 11) * force;
-          x += Math.cos(angle) * force * 62 - Math.sin(angle) * force * swirl + cursor.velocityX * force * 0.8;
-          y += Math.sin(angle) * force * 62 + Math.cos(angle) * force * swirl + cursor.velocityY * force * 0.8 + ripple * 24;
-          energy = Math.min(1, energy + force * (2.1 + speed * 0.035));
-        }
-      }
-
-      context.save();
-      context.translate(x, y);
-      context.rotate(Math.atan(Math.cos(particle.x * 0.011 + time * 1.7) * 0.22));
-      context.fillStyle = particle.accent
-        ? `rgba(${signal}, ${0.44 + energy * 0.52})`
-        : `rgba(${ink}, ${particle.bright ? 0.58 : 0.12 + energy * 0.27})`;
-      const length = particle.accent ? particle.size * 3.5 : particle.size * (1.5 + energy * 1.65);
-      context.fillRect(-length / 2, -particle.size / 2, length, particle.size);
-      context.restore();
-    }
-
-    if (!reducedMotion && visible) frame = requestAnimationFrame(draw);
+    const interact = !motion.matches && cursor.strength > 0.01;
+    paintParticles(context, movingParticles, time, interact);
   }
 
   hero.addEventListener("pointermove", (event) => {
@@ -351,18 +411,51 @@ function initialiseGraphBackground() {
     cursor.targetY = -1000;
   }, { passive: true });
 
+  const sync = () => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    lastDraw = -Infinity;
+    hero.classList.toggle("is-animation-paused", !visible || document.hidden || motion.matches);
+    if (visible && !document.hidden) {
+      if (motion.matches) draw(0);
+      else frame = requestAnimationFrame(draw);
+    }
+  };
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (visible && !reducedMotion && !frame) frame = requestAnimationFrame(draw);
-    if (!visible && frame) {
-      cancelAnimationFrame(frame);
-      frame = 0;
-    }
+    sync();
   }, { threshold: 0.01 }).observe(hero);
+  document.addEventListener("visibilitychange", sync);
+  motion.addEventListener("change", sync);
 
   resize();
   new ResizeObserver(resize).observe(canvas);
-  if (!reducedMotion) frame = requestAnimationFrame(draw);
+  sync();
+}
+
+function initialiseOffscreenMotion() {
+  const regions = document.querySelectorAll("main > section, footer");
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => entry.target.classList.toggle("is-offscreen-motion", !entry.isIntersecting));
+  }, { rootMargin: "180px 0px" });
+  regions.forEach((region) => observer.observe(region));
+}
+
+function initialiseLazyDemos() {
+  document.querySelectorAll("iframe[data-lazy-demo]").forEach((iframe) => {
+    let visible = false;
+    const sync = () => {
+      if (!iframe.hasAttribute("src")) return;
+      iframe.contentWindow?.postMessage({ type: "opengraph-demo-visibility", visible: visible && !document.hidden }, location.origin);
+    };
+    iframe.addEventListener("load", sync);
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+      if (visible && !iframe.hasAttribute("src")) iframe.src = iframe.dataset.src;
+      sync();
+    }, { threshold: [0, 0.25] }).observe(iframe);
+    document.addEventListener("visibilitychange", sync);
+  });
 }
 
 const graphEntities = [
@@ -1149,6 +1242,8 @@ function initialiseTerminalDemo() {
   const heading = terminal?.querySelector("[data-terminal-heading]");
   const description = terminal?.querySelector("[data-terminal-description]");
   const code = terminal?.querySelector("[data-terminal-code]");
+  const copyButton = terminal?.querySelector("[data-terminal-copy]");
+  const copyLabel = copyButton?.querySelector("span");
   const modeButtons = [...(terminal?.querySelectorAll("[data-terminal-mode]") || [])];
   if (!terminal || !transcript || !code) return;
 
@@ -1215,6 +1310,9 @@ agent.run("which customers mentioned pricing in Q3?")`,
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let activeRun = 0;
+  let activeCode = sequences.cli.code;
+  let activeLabel = sequences.cli.label;
+  let copyResetTimer = 0;
   let hasEntered = false;
 
   const tokenPattern = /(#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|https?:\/\/[^\s'"\\]+|--?[\w-]+|\b(?:from|import|as)\b|\b(?:curl|claude|extract_graph|query_graph|summarize_graph|sync_graph_to_vector_db|create_agent|GraphSkill|run)\b|\b(?:opengraph|mcp|add|npx)\b)/g;
@@ -1260,6 +1358,40 @@ agent.run("which customers mentioned pricing in Q3?")`,
     });
   };
 
+  const setCopyState = (state = "idle") => {
+    if (!copyButton || !copyLabel) return;
+    const feedback = state === "copied" ? "Copied" : state === "error" ? "Copy unavailable" : "Copy";
+    copyButton.dataset.state = state;
+    copyLabel.textContent = feedback;
+    copyButton.title = feedback;
+    copyButton.setAttribute(
+      "aria-label",
+      state === "copied"
+        ? `${activeLabel} code copied`
+        : state === "error"
+          ? `${activeLabel} code could not be copied`
+          : `Copy ${activeLabel} code`,
+    );
+  };
+
+  const copyToClipboard = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const fallback = document.createElement("textarea");
+    fallback.value = value;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.append(fallback);
+    fallback.select();
+    const copied = document.execCommand("copy");
+    fallback.remove();
+    if (!copied) throw new Error("Clipboard copy failed");
+  };
+
   const run = (mode = "cli") => {
     const session = sequences[mode] || sequences.cli;
     const runId = ++activeRun;
@@ -1268,6 +1400,10 @@ agent.run("which customers mentioned pricing in Q3?")`,
     if (title) title.textContent = session.title;
     if (heading) heading.textContent = session.label;
     if (description) description.textContent = session.description;
+    activeCode = session.code;
+    activeLabel = session.label;
+    window.clearTimeout(copyResetTimer);
+    setCopyState();
     code.replaceChildren(...session.code.split("\n").map((line) => buildCodeLine(line, session.language)));
     transcript.scrollTop = 0;
 
@@ -1300,6 +1436,17 @@ agent.run("which customers mentioned pricing in Q3?")`,
     });
   });
 
+  copyButton?.addEventListener("click", async () => {
+    window.clearTimeout(copyResetTimer);
+    try {
+      await copyToClipboard(activeCode);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    copyResetTimer = window.setTimeout(() => setCopyState(), 1800);
+  });
+
   const observer = new IntersectionObserver((entries) => {
     if (!entries[0]?.isIntersecting) return;
     if (!hasEntered) {
@@ -1310,6 +1457,116 @@ agent.run("which customers mentioned pricing in Q3?")`,
   }, { threshold: 0.28 });
 
   observer.observe(terminal);
+}
+
+function initialiseUseCaseCarousel() {
+  const carousel = document.querySelector("[data-use-case-carousel]");
+  if (!carousel) return;
+
+  const slides = [...carousel.querySelectorAll("[data-use-case-slide]")];
+  const selectors = [...carousel.querySelectorAll("[data-use-case-select]")];
+  const stage = carousel.querySelector("[data-use-case-stage]");
+  const playback = carousel.querySelector("[data-use-case-playback]");
+  const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const duration = 7000;
+  let activeIndex = 0;
+  let elapsed = 0;
+  let startedAt = 0;
+  let timer = 0;
+  let progress = null;
+  let inView = false;
+  let hovered = false;
+  let stopped = motionPreference.matches;
+
+  const canPlay = () => inView && !document.hidden && !hovered && !stopped;
+
+  const showSlide = (index) => {
+    activeIndex = (index + slides.length) % slides.length;
+    elapsed = 0;
+    progress?.cancel();
+    progress = selectors[activeIndex].querySelector("i").animate(
+      [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+      { duration, fill: "both", easing: "linear" },
+    );
+    progress.pause();
+    slides.forEach((slide, slideIndex) => {
+      const active = slideIndex === activeIndex;
+      slide.classList.toggle("is-active", active);
+      slide.setAttribute("aria-hidden", String(!active));
+      slide.inert = !active;
+      selectors[slideIndex].setAttribute("aria-pressed", String(active));
+    });
+  };
+
+  const syncPlayback = () => {
+    if (timer) elapsed = Math.min(duration, elapsed + performance.now() - startedAt);
+    window.clearTimeout(timer);
+    timer = 0;
+    progress.pause();
+    carousel.dataset.paused = String(!canPlay());
+    playback.dataset.stopped = String(stopped);
+    playback.setAttribute("aria-label", `${stopped ? "Play" : "Pause"} use-case slideshow`);
+    stage.setAttribute("aria-live", stopped ? "polite" : "off");
+    if (canPlay()) {
+      startedAt = performance.now();
+      progress.play();
+      timer = window.setTimeout(() => {
+        timer = 0;
+        showSlide(activeIndex + 1);
+        syncPlayback();
+      }, duration - elapsed);
+    }
+  };
+
+  selectors.forEach((button, index) => {
+    button.addEventListener("click", () => {
+      stopped = true;
+      syncPlayback();
+      showSlide(index);
+    });
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? slides.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + slides.length) % slides.length;
+      selectors[next].focus();
+      selectors[next].click();
+    });
+  });
+
+  playback.addEventListener("click", () => {
+    stopped = !stopped;
+    syncPlayback();
+  });
+
+  // Let readers finish the current card without losing their place in the timer.
+  stage.addEventListener("pointerenter", (event) => {
+    if (event.pointerType !== "mouse") return;
+    hovered = true;
+    syncPlayback();
+  });
+  stage.addEventListener("pointerleave", () => {
+    hovered = false;
+    syncPlayback();
+  });
+  carousel.addEventListener("focusin", (event) => {
+    if (!event.target.matches(":focus-visible")) return;
+    stopped = true;
+    syncPlayback();
+  });
+  document.addEventListener("visibilitychange", syncPlayback);
+  motionPreference.addEventListener("change", () => {
+    stopped = motionPreference.matches;
+    syncPlayback();
+  });
+
+  const observer = new IntersectionObserver(([entry]) => {
+    inView = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+    syncPlayback();
+  }, { threshold: [0, 0.25] });
+  observer.observe(carousel);
+  showSlide(0);
+  syncPlayback();
 }
 
 // PLACEHOLDER - confirm the real inbox before this ships.
@@ -1372,9 +1629,12 @@ function initialiseContactForm() {
 
 initialiseContactForm();
 initialiseMorphicNavbar();
+initialiseOffscreenMotion();
 initialiseScrollParallax();
 initialiseToTopButton();
 initialiseGraphBackground();
+initialiseLazyDemos();
 initialiseBenefitHighlights();
+initialiseUseCaseCarousel();
 initialiseTerminalDemo();
 initialiseMultimodalExpansion();
