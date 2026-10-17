@@ -43,8 +43,12 @@
   mask-composite: intersect;
 }
 
+/* The loop uses the full frame width (sources at both edges, the agent on the
+   right), so phones show the whole frame edge to edge rather than a centre crop. */
 @media (max-width: 720px) {
   .graph-loop {
-    aspect-ratio: 16 / 11;
+    width: auto;
+    aspect-ratio: 1440 / 608;
+    margin-inline: calc(50% - 50vw);
   }
 }

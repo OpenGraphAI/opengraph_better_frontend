@@ -1,4 +1,4 @@
-import { marked } from "marked";
+import { Marked, marked } from "marked";
 import hljs from "highlight.js/lib/core";
 import bash from "highlight.js/lib/languages/bash";
 import json from "highlight.js/lib/languages/json";
@@ -7,9 +7,11 @@ import plaintext from "highlight.js/lib/languages/plaintext";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   BookOpen,
   Check,
+  CircleAlert,
   Code2,
   Copy,
   ExternalLink,
@@ -21,9 +23,11 @@ import {
   Network,
   Plug,
   Rocket,
+  RotateCcw,
   Search,
   Send,
   Sparkles,
+  SquarePen,
   SquareTerminal,
   Sun,
   Wrench,
@@ -65,9 +69,11 @@ const pageIcons = {
 const iconSet = {
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   BookOpen,
   Check,
+  CircleAlert,
   Code2,
   Copy,
   ExternalLink,
@@ -79,9 +85,11 @@ const iconSet = {
   Network,
   Plug,
   Rocket,
+  RotateCcw,
   Search,
   Send,
   Sparkles,
+  SquarePen,
   SquareTerminal,
   Sun,
   Wrench,
@@ -175,16 +183,44 @@ const assistantContextLabel = document.querySelector("[data-assistant-context-la
 const assistantClear = document.querySelector("[data-assistant-clear]");
 const assistantInputShell = document.querySelector("[data-assistant-input-shell]");
 const assistantSend = document.querySelector("[data-assistant-send]");
+const chatDrawer = document.querySelector("[data-chat-drawer]");
+const chatMessages = document.querySelector("[data-chat-messages]");
+const chatForm = document.querySelector("[data-chat-form]");
+const chatInput = document.querySelector("[data-chat-input]");
+const chatClear = document.querySelector("[data-chat-clear]");
+const chatClose = document.querySelector("[data-chat-close]");
+const chatAttached = document.querySelector("[data-chat-attached]");
+const chatAttachedLabel = document.querySelector("[data-chat-attached-label]");
+const chatAttachedClear = document.querySelector("[data-chat-attached-clear]");
+const chatSend = document.querySelector("[data-chat-send]");
+const chatWelcomeMarkup = chatMessages?.innerHTML ?? "";
 
 let showingMarkdown = false;
 let activeSlug = "";
 let toastTimer;
 let attachedCode = "";
+let attachedLang = "";
+let chatStreaming = false;
+// Completed turns sent with each question so follow-ups have context; reset by "New chat".
+let chatHistory = [];
+let chatSessionId = 0;
+let chatAbortController = null;
 
-const assistantMinHeight = 52;
-const assistantMaxHeight = 200;
+const assistantMinHeight = 32;
+const assistantMaxHeight = 120;
+const chatInputMaxHeight = 168;
+const chatInputPlaceholder = "Message OpenGraph AI…";
+const chatScrollStickThreshold = 80;
+const chatHistoryLimit = 20;
 
 marked.setOptions({ gfm: true, breaks: false });
+
+// Chat answers come from the model, so raw HTML in them is shown as text, never rendered.
+const chatMarked = new Marked({
+  gfm: true,
+  breaks: false,
+  renderer: { html: ({ text }) => escapeHtml(text) },
+});
 hljs.registerLanguage("bash", bash);
 hljs.registerLanguage("shell", bash);
 hljs.registerLanguage("json", json);
@@ -306,7 +342,12 @@ function decorateArticle(page) {
     askAction.addEventListener("click", () => attachCode(code.textContent, language));
 
     actions.append(copyAction, askAction);
-    pre.append(actions);
+
+    // Actions sit on a wrapper, not inside <pre>, so they stay pinned while the code scrolls sideways.
+    const block = document.createElement("div");
+    block.className = "code-block";
+    pre.replaceWith(block);
+    block.append(pre, actions);
   });
 
   toc.innerHTML = headings.length
@@ -519,15 +560,33 @@ function showAssistantContext(label, icon) {
 
 function attachCode(code, language) {
   attachedCode = code;
+  attachedLang = language;
+
+  // Show in bottom floating bar
   showAssistantContext(`${language.toUpperCase()} code attached`, "code-2");
-  assistantInput.placeholder = "Ask about the attached code…";
-  assistantInput.focus();
+  assistantInput.placeholder = `Ask about this ${language.toUpperCase()} code…`;
+
+  // Show in right chat drawer
+  if (chatAttached && chatAttachedLabel) {
+    chatAttached.hidden = false;
+    chatAttachedLabel.textContent = `${language.toUpperCase()} snippet attached`;
+  }
+  if (chatInput) {
+    chatInput.placeholder = `Ask about this ${language.toUpperCase()} snippet…`;
+  }
+
+  // Smoothly open the chat drawer on the right and focus input
+  openChatDrawer();
+  chatInput?.focus();
 }
 
 function clearAttachedCode() {
   attachedCode = "";
+  attachedLang = "";
   assistantContext.hidden = true;
   assistantInput.placeholder = "Ask the documentation…";
+  if (chatAttached) chatAttached.hidden = true;
+  if (chatInput) chatInput.placeholder = chatInputPlaceholder;
 }
 
 function updateThemeButton() {
@@ -575,18 +634,264 @@ assistantInputShell.addEventListener("click", (event) => {
   if (!event.target.closest("button, label, input, textarea")) assistantInput.focus();
 });
 
+function openChatDrawer() {
+  if (!chatDrawer) return;
+  chatDrawer.hidden = false;
+  // Force a style flush so the slide-in transition runs after un-hiding.
+  void chatDrawer.offsetWidth;
+  chatDrawer.classList.add("is-open");
+  chatDrawer.setAttribute("aria-hidden", "false");
+  chatInput?.focus();
+}
+
+function closeChatDrawer() {
+  if (!chatDrawer) return;
+  chatDrawer.classList.remove("is-open");
+  chatDrawer.setAttribute("aria-hidden", "true");
+  setTimeout(() => {
+    if (!chatDrawer.classList.contains("is-open")) chatDrawer.hidden = true;
+  }, 260);
+}
+
+function clearChatMessages() {
+  if (!chatMessages) return;
+  chatAbortController?.abort();
+  chatHistory = [];
+  chatSessionId += 1;
+  chatMessages.innerHTML = chatWelcomeMarkup;
+  refreshIcons();
+  chatInput?.focus();
+}
+
+function scrollChatToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function isChatNearBottom() {
+  return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < chatScrollStickThreshold;
+}
+
+function adjustChatInputHeight() {
+  if (!chatInput) return;
+  chatInput.style.height = "auto";
+  chatInput.style.height = `${Math.min(chatInput.scrollHeight, chatInputMaxHeight)}px`;
+  chatInput.style.overflowY = chatInput.scrollHeight > chatInputMaxHeight ? "auto" : "hidden";
+}
+
+function updateChatSend() {
+  if (!chatSend || !chatInput) return;
+  chatSend.disabled = chatStreaming || !chatInput.value.trim();
+}
+
+function createUserMessage(prompt, snippet, lang) {
+  const message = document.createElement("div");
+  message.className = "docs-chat-msg user";
+  if (snippet) {
+    message.innerHTML = `
+      <div class="docs-chat-snippet-preview">
+        <span class="snippet-badge">${escapeHtml(lang || "code")}</span>
+        <code>${escapeHtml(snippet.trim())}</code>
+      </div>
+    `;
+  }
+  const bubble = document.createElement("div");
+  bubble.className = "docs-chat-bubble markdown-body";
+  // Single newlines stay line breaks, as typed.
+  bubble.innerHTML = chatMarked.parse(prompt, { breaks: true });
+  bubble.querySelectorAll("pre code").forEach((block) => hljs.highlightElement(block));
+  message.appendChild(bubble);
+  return message;
+}
+
+function rememberChatTurn(prompt, snippet, lang, answer) {
+  const question = snippet ? `\`\`\`${lang || ""}\n${snippet.trim()}\n\`\`\`\n\n${prompt}` : prompt;
+  chatHistory = [
+    ...chatHistory,
+    { role: "user", text: question },
+    { role: "model", text: answer },
+  ].slice(-chatHistoryLimit);
+}
+
+function createAssistantMessage() {
+  const message = document.createElement("div");
+  message.className = "docs-chat-msg assistant";
+  message.innerHTML = `
+    <div class="docs-chat-loading" role="status">
+      <span class="docs-chat-loading-dot" aria-hidden="true"></span>
+      <span class="visually-hidden">Thinking…</span>
+    </div>
+    <div class="markdown-body" hidden></div>
+  `;
+  return message;
+}
+
+function showChatError(message, text) {
+  message.innerHTML = `
+    <div class="docs-chat-error" role="alert">
+      <i data-lucide="circle-alert" aria-hidden="true"></i>
+      <span>${escapeHtml(text)}</span>
+    </div>
+  `;
+  refreshIcons();
+  scrollChatToBottom();
+}
+
+function addCopyAction(message, text) {
+  const actions = document.createElement("div");
+  actions.className = "docs-chat-msg-actions";
+  actions.innerHTML = `
+    <button type="button" class="docs-chat-msg-copy" aria-label="Copy answer" title="Copy">
+      <i data-lucide="copy" aria-hidden="true"></i>
+    </button>
+  `;
+  const button = actions.querySelector("button");
+  button.addEventListener("click", async () => {
+    const copied = await copyText(text);
+    button.innerHTML = `<i data-lucide="${copied ? "check" : "copy"}" aria-hidden="true"></i>`;
+    button.title = copied ? "Copied" : "Copy unavailable";
+    refreshIcons();
+    window.setTimeout(() => {
+      button.innerHTML = '<i data-lucide="copy" aria-hidden="true"></i>';
+      button.title = "Copy";
+      refreshIcons();
+    }, 1500);
+  });
+  message.appendChild(actions);
+  refreshIcons();
+}
+
+// Streams the answer into `message`; resolves to the full answer, or "" when it failed.
+async function streamAssistantReply(message, { prompt, context, history, signal }) {
+  const response = await fetch("/api/assistant", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, context, history }),
+    signal,
+  });
+
+  if (!response.ok) {
+    let errorText = "Failed to receive a response.";
+    try {
+      const errorJson = await response.json();
+      errorText = errorJson.error || errorText;
+    } catch {}
+    showChatError(message, errorText);
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const markdownBody = message.querySelector(".markdown-body");
+  let answer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    answer += decoder.decode(value, { stream: true });
+    if (!answer.trim()) continue;
+
+    const stickToBottom = isChatNearBottom();
+    message.querySelector(".docs-chat-loading")?.remove();
+    markdownBody.hidden = false;
+    markdownBody.innerHTML = chatMarked.parse(answer);
+    if (stickToBottom) scrollChatToBottom();
+  }
+
+  if (!answer.trim()) {
+    showChatError(message, "The assistant returned an empty response. Try rephrasing your question.");
+    return "";
+  }
+
+  markdownBody.querySelectorAll("pre code").forEach((block) => hljs.highlightElement(block));
+  addCopyAction(message, answer);
+  return answer;
+}
+
+async function sendChatMessage(prompt) {
+  if (!prompt || !chatMessages || chatStreaming) return;
+
+  openChatDrawer();
+
+  // Snapshot and reset the attached snippet for this question.
+  const snippet = attachedCode;
+  const lang = attachedLang;
+  clearAttachedCode();
+
+  chatMessages.querySelector(".docs-chat-welcome")?.remove();
+  chatMessages.appendChild(createUserMessage(prompt, snippet, lang));
+  const assistantMsg = createAssistantMessage();
+  chatMessages.appendChild(assistantMsg);
+  scrollChatToBottom();
+
+  const pageMarkdown = currentPage().markdown.slice(0, 4000);
+  const contextData = snippet
+    ? `Attached Code Snippet (${lang}):\n${snippet}\n\nPage Markdown:\n${pageMarkdown}`
+    : `Page Markdown:\n${pageMarkdown}`;
+
+  const sessionId = chatSessionId;
+  const abortController = new AbortController();
+  chatAbortController = abortController;
+  chatStreaming = true;
+  updateChatSend();
+  try {
+    const answer = await streamAssistantReply(assistantMsg, {
+      prompt,
+      context: contextData,
+      history: chatHistory,
+      signal: abortController.signal,
+    });
+    // Skip answers that finish after "New chat" so they do not leak into the fresh conversation.
+    if (answer && sessionId === chatSessionId) rememberChatTurn(prompt, snippet, lang, answer);
+  } catch {
+    if (!abortController.signal.aborted) {
+      showChatError(assistantMsg, "Could not reach the assistant. Check your connection and try again.");
+    }
+  } finally {
+    if (chatAbortController === abortController) chatAbortController = null;
+    chatStreaming = false;
+    updateChatSend();
+  }
+}
+
 assistantForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (!assistantInput.value.trim()) {
+  const prompt = assistantInput.value.trim();
+  if (!prompt || chatStreaming) {
     assistantInput.focus();
     return;
   }
-  const context = attachedCode ? "attached code and documentation" : "current documentation page";
-  showToast(`Assistant API not connected — query would use ${context}.`);
+
   assistantInput.value = "";
   adjustAssistantHeight(true);
   updateAssistantSend();
+  sendChatMessage(prompt);
 });
+
+chatForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const prompt = chatInput.value.trim();
+  if (!prompt || chatStreaming) return;
+  chatInput.value = "";
+  adjustChatInputHeight();
+  updateChatSend();
+  sendChatMessage(prompt);
+});
+
+chatInput?.addEventListener("input", () => {
+  adjustChatInputHeight();
+  updateChatSend();
+});
+
+chatInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
+
+chatClose?.addEventListener("click", closeChatDrawer);
+chatClear?.addEventListener("click", clearChatMessages);
+chatAttachedClear?.addEventListener("click", clearAttachedCode);
 
 themeButton.addEventListener("click", () => {
   const nextTheme = document.documentElement.dataset.docsTheme === "dark" ? "light" : "dark";
@@ -643,5 +948,6 @@ document.addEventListener("keydown", (event) => {
     search.blur();
     closeSearch();
     closeMenu();
+    closeChatDrawer();
   }
 });

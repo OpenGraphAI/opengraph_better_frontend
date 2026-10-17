@@ -55,7 +55,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=Instrument+Sans:opsz,wght@12..32,400;12..32,500;12..32,600;12..32,700&family=Inter+Tight:wght@400&family=Jersey+25&family=Space+Grotesk:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Inter+Tight:wght@400&family=Jersey+25&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
@@ -63,63 +63,7 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&family=Inter+Tight:wght@400&family=Jersey+25&display=swap" /></noscript>
   </head>
   <body>
-    <header class="morphic-navbar" data-site-header>
-      <nav class="nav-shell" aria-label="Primary navigation">
-        <a class="nav-brand" href="#home" aria-label="OpenGraph AI home">
-          <img class="nav-brand-mark" src="/opengraph-logo.svg" alt="" width="28" height="28" />
-          <span>OpenGraph <b>AI</b></span>
-        </a>
-
-        <div class="nav-desktop" data-nav-menu>
-          <details class="nav-dropdown">
-            <summary>Products <span class="nav-chevron" aria-hidden="true"></span></summary>
-            <div class="nav-popover">
-              <a href="#how-it-works"><b>How it works</b><span>See the context pipeline</span></a>
-              <a href="#playground"><b>Playground</b><span>Try the developer workflow</span></a>
-              <a href="#about"><b>Open source</b><span>Explore the project</span></a>
-            </div>
-          </details>
-          <details class="nav-dropdown">
-            <summary>Use Cases <span class="nav-chevron" aria-hidden="true"></span></summary>
-            <div class="nav-popover">
-              <a href="#use-cases"><b>Robotics</b><span>Connect objects, locations, and tasks</span></a>
-              <a href="#use-cases"><b>Image &amp; video search</b><span>Find visual relationships</span></a>
-              <a href="#use-cases"><b>Multimodal AI agents</b><span>Reason across every source</span></a>
-              <a href="#use-cases"><b>Healthcare &amp; research</b><span>Connect patient context</span></a>
-            </div>
-          </details>
-          <details class="nav-dropdown">
-            <summary>Resources <span class="nav-chevron" aria-hidden="true"></span></summary>
-            <div class="nav-popover nav-popover-right">
-              <a href="/docs/" target="_blank" rel="noopener noreferrer"><b>Documentation</b><span>Guides and API reference</span></a>
-              <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer"><b>GitHub</b><span>Source, issues, and releases</span></a>
-              <a href="#about"><b>About</b><span>Why we're building OpenGraph</span></a>
-            </div>
-          </details>
-        </div>
-
-        <div class="nav-actions">
-          <a class="nav-social" href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer" aria-label="OpenGraph AI on GitHub">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.7a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1.1 1.6 1.1.9 1.6 2.4 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.3-.3-4.6-1.1-4.6-4.7 0-1 .4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.7 1a9.3 9.3 0 0 1 4.9 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.6.7 1 1.6 1 2.6 0 3.7-2.3 4.5-4.6 4.7.4.3.7 1 .7 1.9v2.8c0 .4.2.7.7.5A9.5 9.5 0 0 0 12 2.7Z" /></svg>
-          </a>
-          <a class="nav-social" href="https://www.linkedin.com/company/opengraph-ai/" target="_blank" rel="noopener noreferrer" aria-label="OpenGraph AI on LinkedIn">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 8.5H3.4V19h3.2V8.5ZM5 3a1.9 1.9 0 1 0 0 3.8A1.9 1.9 0 0 0 5 3Zm7 5.5H8.9V19H12v-5.2c0-1.4.3-2.7 2-2.7 1.7 0 1.7 1.6 1.7 2.8V19H19v-5.8c0-2.9-.6-5-3.9-5-1.6 0-2.6.9-3.1 1.7V8.5Z" /></svg>
-          </a>
-          <a class="nav-cta" href="#playground">Try playground</a>
-          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-navigation" data-nav-toggle>
-            <span class="visually-hidden">Toggle navigation</span>
-            <i></i><i></i>
-          </button>
-        </div>
-      </nav>
-
-      <div class="nav-mobile" id="mobile-navigation" data-nav-mobile hidden>
-        <a href="#how-it-works">Product</a>
-        <a href="#use-cases">Use cases</a>
-        <a href="/docs/" target="_blank" rel="noopener noreferrer">Documentation</a>
-        <a href="#about">About</a>
-      </div>
-    </header>
+    <!-- site-header home -->
 
     <main class="site-main">
     <section class="hero" id="home">
@@ -149,9 +93,15 @@
         </p>
 
         <div class="hero-actions" aria-label="OpenGraph AI actions">
-          <a class="hero-button hero-button-primary" href="#playground">
+          <a
+            class="hero-button hero-button-primary"
+            href="https://opengraphai.github.io/opengraph-samples-robot-scene-memory/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <span class="terminal-mark" aria-hidden="true">&gt;_</span>
             <span>Try the playground</span>
+            <span class="external-mark" aria-hidden="true">↗</span>
           </a>
           <a
             class="hero-button hero-button-secondary"
@@ -412,6 +362,7 @@
                     <li>Plan actions around tools and dependencies.</li>
                     <li>Share context across robots to coordinate work.</li>
                   </ul>
+                  <a class="use-case-link" href="/use-cases/robotics/">Explore robotics</a>
                 </div>
               </div>
 
@@ -435,6 +386,7 @@
                     <li>Search “a person riding a bicycle near a building.”</li>
                     <li>Retrieve visual context beyond keyword matches.</li>
                   </ul>
+                  <a class="use-case-link" href="/use-cases/image-video-search/">Explore image &amp; video search</a>
                 </div>
               </div>
 
@@ -460,31 +412,33 @@
                     <li>Retrieve context across formats and sources.</li>
                     <li>Follow relationships for explainable reasoning.</li>
                   </ul>
+                  <a class="use-case-link" href="/use-cases/multimodal-agents/">Explore multimodal agents</a>
                 </div>
               </div>
 
-              <div class="use-case-slide" data-use-case-slide role="group" aria-roledescription="slide" aria-label="4 of 4: Healthcare and Medical Research" aria-hidden="true" inert>
+              <div class="use-case-slide" data-use-case-slide role="group" aria-roledescription="slide" aria-label="4 of 4: Research" aria-hidden="true" inert>
                 <div class="use-case-scene" aria-hidden="true">
                   <svg viewBox="0 0 520 190" fill="none">
                     <path class="case-edge" d="M140 56H186L226 95M140 142H186L226 95M380 56H334L294 95M380 142H334L294 95" />
                     <path class="case-route" d="M140 56H186L226 95M380 142H334L294 95" />
-                    <rect class="case-node" x="30" y="35" width="120" height="42" rx="11" /><text x="90" y="61">Imaging</text>
-                    <rect class="case-node" x="30" y="121" width="120" height="42" rx="11" /><text x="90" y="147">Lab results</text>
-                    <rect class="case-node" x="370" y="35" width="120" height="42" rx="11" /><text x="430" y="61">Clinical notes</text>
-                    <rect class="case-node" x="370" y="121" width="120" height="42" rx="11" /><text x="430" y="147">History</text>
+                    <rect class="case-node" x="30" y="35" width="120" height="42" rx="11" /><text x="90" y="61">Papers</text>
+                    <rect class="case-node" x="30" y="121" width="120" height="42" rx="11" /><text x="90" y="147">Data tables</text>
+                    <rect class="case-node" x="370" y="35" width="120" height="42" rx="11" /><text x="430" y="61">Figures</text>
+                    <rect class="case-node" x="370" y="121" width="120" height="42" rx="11" /><text x="430" y="147">Notes</text>
                     <circle class="case-hub-halo" cx="260" cy="95" r="52" /><circle class="case-hub" cx="260" cy="95" r="40" />
-                    <g class="case-icon"><path d="M251 74H269V86H281V104H269V116H251V104H239V86H251Z" /></g>
-                    <text class="case-note" x="260" y="176">connected patient context</text>
+                    <g class="case-icon"><path d="M247 72H266L275 81V118H247ZM266 72V81H275M253 92H269M253 100H269M253 108H263" /></g>
+                    <text class="case-note" x="260" y="176">claims traced to sources</text>
                   </svg>
                 </div>
                 <div class="use-case-copy">
-                  <h3>Healthcare &amp;<br />Medical Research</h3>
-                  <p>Bring scattered patient information into context.</p>
+                  <h3>Research</h3>
+                  <p>Connect papers, figures, and data.</p>
                   <ul>
-                    <li>Link medical images, clinical notes, and lab results.</li>
+                    <li>Link claims, figures, and data tables in one graph.</li>
                     <li>Explore connections across findings and concepts.</li>
-                    <li>Build a unified view of a patient’s history.</li>
+                    <li>Trace every answer back to the file it came from.</li>
                   </ul>
+                  <a class="use-case-link" href="/use-cases/research/">Explore research</a>
                 </div>
               </div>
             </div>
@@ -494,7 +448,7 @@
                 <button type="button" data-use-case-select="0" aria-label="Show Robotics" aria-pressed="true"><span><i></i></span></button>
                 <button type="button" data-use-case-select="1" aria-label="Show Image and Video Search" aria-pressed="false"><span><i></i></span></button>
                 <button type="button" data-use-case-select="2" aria-label="Show Multimodal AI Agents" aria-pressed="false"><span><i></i></span></button>
-                <button type="button" data-use-case-select="3" aria-label="Show Healthcare and Medical Research" aria-pressed="false"><span><i></i></span></button>
+                <button type="button" data-use-case-select="3" aria-label="Show Research" aria-pressed="false"><span><i></i></span></button>
               </div>
               <button class="use-case-playback" type="button" data-use-case-playback aria-label="Pause use-case slideshow">
                 <svg viewBox="0 0 16 16" aria-hidden="true"><path class="case-pause-icon" d="M5 4V12M11 4V12" /><path class="case-play-icon" d="M5 3L12 8L5 13Z" /></svg>
@@ -592,6 +546,33 @@
             </header>
             <pre class="terminal-code"><code data-terminal-code></code></pre>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq" aria-labelledby="faq-title">
+      <div class="faq-shell">
+        <header class="faq-header">
+          <h2 id="faq-title">Questions, answered.</h2>
+          <p class="faq-lede">
+            What OpenGraph AI does today, where your data goes, and how to
+            start building.
+          </p>
+
+          <div class="faq-help">
+            <p><b>Still have a question?</b> Ask us directly or dig into the docs.</p>
+            <div class="faq-help-actions">
+              <a class="faq-help-primary" href="#about">Talk to us</a>
+              <a class="faq-help-secondary" href="/docs/" target="_blank" rel="noopener noreferrer">
+                Read the docs <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+        </header>
+
+        <!-- Questions come from content/faq.md (scripts/faq.mjs). -->
+        <div class="faq-list">
+          <!-- site-faq -->
         </div>
       </div>
     </section>
@@ -707,41 +688,7 @@
     </section>
     </main>
 
-    <footer class="site-footer" aria-labelledby="footer-title">
-      <h2 class="visually-hidden" id="footer-title">OpenGraph AI site links</h2>
-      <div class="footer-shell">
-        <div class="footer-brand">
-          <p class="footer-wordmark"><img class="footer-brand-mark" src="/opengraph-logo.svg" alt="" width="30" height="30" /> OpenGraph <b>AI</b></p>
-          <p>
-            Heterogeneous data into queryable knowledge graphs. Context for
-            agents that need to reason.
-          </p>
-        </div>
-
-        <nav class="footer-column" aria-label="Product">
-          <p class="footer-heading">PRODUCT</p>
-          <a href="#home">Home</a>
-          <a href="#playground">Playground</a>
-        </nav>
-
-        <nav class="footer-column" aria-label="Community">
-          <p class="footer-heading">COMMUNITY</p>
-          <a href="https://www.linkedin.com/company/opengraph-ai/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-          <a href="https://opengraphai.io" target="_blank" rel="noopener noreferrer">Website</a>
-        </nav>
-
-        <nav class="footer-column" aria-label="Developers">
-          <p class="footer-heading">DEVELOPERS</p>
-          <a href="/docs/" target="_blank" rel="noopener noreferrer">Documentation</a>
-          <a href="https://github.com/OpenGraphAI/opengraph-ai" target="_blank" rel="noopener noreferrer">GitHub</a>
-        </nav>
-      </div>
-
-      <div class="footer-base">
-        <span>OPEN SOURCE · APACHE 2.0</span>
-        <span>© 2026 OpenGraph AI</span>
-      </div>
-    </footer>
+    <!-- site-footer home -->
 
     <button class="to-top-button" type="button" data-to-top aria-label="Back to the top">
       <svg viewBox="0 0 24 24" aria-hidden="true">

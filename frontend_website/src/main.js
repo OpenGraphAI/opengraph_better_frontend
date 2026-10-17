@@ -1,5 +1,16 @@
 import { animate, createTimeline, stagger, svg } from "animejs";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 import "./styles.css";
+import { initialiseMorphicNavbar } from "./site-nav.js";
+
+const lenis = new Lenis({
+  autoRaf: true,
+  lerp: 0.09,
+  smoothWheel: true,
+  wheelMultiplier: 0.95,
+  touchMultiplier: 1.0,
+});
 
 // Colours live in theme.css so a palette flip is one data-theme attribute.
 // Canvas and inline SVG fills can't read var(), so resolve the token once here.
@@ -10,152 +21,35 @@ function themeToken(name, fallback) {
 
 const groundInk = () => themeToken("--ground-ink", "#000000");
 const groundInkRgb = () => themeToken("--ground-ink-rgb", "0 0 0").replace(/\s+/g, ", ");
-let activeScrollFrame = 0;
-let stopActiveScroll = null;
+
+const SCROLL_DRIFT_TOLERANCE_PX = 6;
 
 function smoothScrollToElement(target, options = {}) {
   if (!target) return Promise.resolve(false);
 
-  cancelAnimationFrame(activeScrollFrame);
-  stopActiveScroll?.();
-
-  const start = window.scrollY;
   const navigation = document.querySelector(".morphic-navbar");
   const offset = options.offset ?? Math.max((navigation?.offsetHeight || 52) + 28, 76);
-  const rawDestination = target.id === "home"
-    ? 0
-    : target.getBoundingClientRect().top + window.scrollY - offset;
-  const destination = Math.max(0, Math.min(rawDestination, document.documentElement.scrollHeight - window.innerHeight));
-  const distance = destination - start;
+
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    window.scrollTo(0, destination);
+    lenis.scrollTo(target, { offset: -offset, immediate: true });
     return Promise.resolve(true);
   }
-  const duration = options.duration ?? Math.min(1150, Math.max(700, Math.abs(distance) * 0.34));
 
-  if (Math.abs(distance) < 2) return Promise.resolve(true);
-
-  return new Promise((resolve) => {
-    let startedAt = 0;
-    let stopped = false;
-    const interruptKeys = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
-
-    const cleanup = () => {
-      window.removeEventListener("wheel", interrupt, { passive: true });
-      window.removeEventListener("touchstart", interrupt, { passive: true });
-      window.removeEventListener("keydown", interrupt);
-      if (stopActiveScroll === interrupt) stopActiveScroll = null;
-    };
-
-    const interrupt = (event) => {
-      if (event?.type === "keydown" && !interruptKeys.has(event.key)) return;
-      stopped = true;
-      cancelAnimationFrame(activeScrollFrame);
-      cleanup();
-      resolve(false);
-    };
-
-    stopActiveScroll = interrupt;
-    window.addEventListener("wheel", interrupt, { passive: true });
-    window.addEventListener("touchstart", interrupt, { passive: true });
-    window.addEventListener("keydown", interrupt);
-
-    const easeInOutQuint = (progress) => progress < 0.5
-      ? 16 * progress ** 5
-      : 1 - ((-2 * progress + 2) ** 5) / 2;
-
-    const step = (timestamp) => {
-      if (stopped) return;
-      if (!startedAt) startedAt = timestamp;
-      const progress = Math.min((timestamp - startedAt) / duration, 1);
-      window.scrollTo(0, start + distance * easeInOutQuint(progress));
-
-      if (progress < 1) {
-        activeScrollFrame = requestAnimationFrame(step);
-      } else {
-        cleanup();
-        resolve(true);
-      }
-    };
-
-    activeScrollFrame = requestAnimationFrame(step);
-  });
-}
-
-function initialiseMorphicNavbar() {
-  const header = document.querySelector("[data-site-header]");
-  if (!header) return;
-  const dropdowns = [...header.querySelectorAll(".nav-dropdown")];
-  const toggle = header.querySelector("[data-nav-toggle]");
-  const mobile = header.querySelector("[data-nav-mobile]");
-  const hoverNavigation = window.matchMedia("(hover: hover) and (pointer: fine)");
-
-  const closeNavigation = () => {
-    dropdowns.forEach((dropdown) => dropdown.removeAttribute("open"));
-    if (toggle && mobile) {
-      toggle.setAttribute("aria-expanded", "false");
-      mobile.hidden = true;
-    }
-  };
-
-  dropdowns.forEach((dropdown) => {
-    let hoverCloseTimer = 0;
-    const summary = dropdown.querySelector("summary");
-
-    dropdown.addEventListener("toggle", () => {
-      if (!dropdown.open) return;
-      dropdowns.forEach((other) => {
-        if (other !== dropdown) other.removeAttribute("open");
-      });
-    });
-
-    dropdown.addEventListener("pointerenter", () => {
-      if (!hoverNavigation.matches) return;
-      window.clearTimeout(hoverCloseTimer);
-      dropdown.setAttribute("open", "");
-    });
-
-    dropdown.addEventListener("pointerleave", () => {
-      if (!hoverNavigation.matches) return;
-      hoverCloseTimer = window.setTimeout(() => dropdown.removeAttribute("open"), 100);
-    });
-
-    summary?.addEventListener("click", (event) => {
-      if (!hoverNavigation.matches || event.detail === 0) return;
-      event.preventDefault();
-      dropdown.setAttribute("open", "");
+  const glide = () => new Promise((resolve) => {
+    lenis.scrollTo(target, {
+      offset: -offset,
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      onComplete: () => resolve(true),
     });
   });
 
-  toggle?.addEventListener("click", () => {
-    const willOpen = toggle.getAttribute("aria-expanded") !== "true";
-    toggle.setAttribute("aria-expanded", String(willOpen));
-    if (mobile) mobile.hidden = !willOpen;
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!header.contains(event.target)) closeNavigation();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeNavigation();
-  });
-
-  header.querySelectorAll("[data-mock-link]").forEach((link) => {
-    link.addEventListener("click", (event) => event.preventDefault());
-  });
-
-  document.querySelectorAll('a[href^="#"]:not([data-mock-link])').forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const targetId = link.getAttribute("href");
-      const target = targetId ? document.querySelector(targetId) : null;
-      if (!target) return;
-      event.preventDefault();
-      closeNavigation();
-      smoothScrollToElement(target).then((completed) => {
-        if (completed) history.pushState(null, "", targetId);
-      });
-    });
+  // Lazy demos above the target can grow or shrink while the page glides past
+  // them, leaving Lenis aimed at a stale position. Snap to the settled spot.
+  return glide().then(() => {
+    const drift = target.getBoundingClientRect().top - offset;
+    if (Math.abs(drift) > SCROLL_DRIFT_TOLERANCE_PX) lenis.scrollTo(target, { offset: -offset, immediate: true });
+    return true;
   });
 }
 
@@ -173,43 +67,48 @@ function initialiseScrollParallax() {
     });
   };
 
-  register(".graph-background", 0.13, 74);
-  register(".benefit-header", 0.048, 38);
-  register(".benefit-bento-item", [0.018, 0.03, 0.022, 0.026], 22);
-  register(".command-header", 0.042, 34);
-  register(".terminal-window", 0.02, 22);
-  register(".about-header", 0.04, 34);
-  register(".about-principles, .about-contact", [0.018, 0.032], 24);
-  register(".footer-brand", 0.022, 18);
+  // Keep parallax exclusively on the depth canvas to avoid layout jitter on text/headers
+  register(".graph-background", 0.08, 48);
   if (!layers.length) return;
 
-  let parallaxFrame = 0;
+  let cachedLayers = [];
+  const measure = () => {
+    const scrollY = lenis.scroll || window.scrollY;
+    cachedLayers = layers.map((layer) => {
+      const rect = layer.element.getBoundingClientRect();
+      return {
+        ...layer,
+        top: rect.top + scrollY,
+        height: rect.height,
+      };
+    });
+  };
+
   const clamp = (value, max) => Math.min(Math.max(value, -max), max);
-  const update = () => {
-    parallaxFrame = 0;
+  const update = (scrollVal) => {
+    const scroll = typeof scrollVal === "number" ? scrollVal : (lenis.scroll || window.scrollY);
     const viewportCenter = window.innerHeight / 2;
 
-    // Read every position before writing transforms to avoid forced layouts.
-    const positions = layers.map(({ element, speed, maxTravel }) => {
-      const bounds = element.getBoundingClientRect();
-      if (bounds.bottom < -180 || bounds.top > window.innerHeight + 180) return null;
-      const layerCenter = bounds.top + bounds.height / 2;
-      const offset = clamp(-(layerCenter - viewportCenter) * speed, maxTravel);
-      return { element, offset };
-    });
-    positions.forEach((position) => {
-      if (position) position.element.style.setProperty("--parallax-y", `${position.offset.toFixed(2)}px`);
+    cachedLayers.forEach((layer) => {
+      const layerTopOnScreen = layer.top - scroll;
+      if (layerTopOnScreen + layer.height < -120 || layerTopOnScreen > window.innerHeight + 120) return;
+      const layerCenter = layerTopOnScreen + layer.height / 2;
+      const offset = clamp(-(layerCenter - viewportCenter) * layer.speed, layer.maxTravel);
+      layer.element.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
     });
   };
 
-  const queueUpdate = () => {
-    if (parallaxFrame) return;
-    parallaxFrame = requestAnimationFrame(update);
-  };
-
+  measure();
   update();
-  window.addEventListener("scroll", queueUpdate, { passive: true });
-  window.addEventListener("resize", queueUpdate, { passive: true });
+
+  lenis.on("scroll", ({ scroll }) => {
+    update(scroll);
+  });
+
+  window.addEventListener("resize", () => {
+    measure();
+    update();
+  }, { passive: true });
 }
 
 function initialiseToTopButton() {
@@ -217,17 +116,21 @@ function initialiseToTopButton() {
   const hero = document.querySelector("#home");
   if (!button || !hero) return;
 
-  let visibilityFrame = 0;
-  const updateVisibility = () => {
-    visibilityFrame = 0;
-    const threshold = Math.max(hero.offsetHeight * 0.72, 520);
-    button.classList.toggle("is-visible", window.scrollY > threshold);
+  let threshold = 520;
+  const updateThreshold = () => {
+    threshold = Math.max(hero.offsetHeight * 0.72, 520);
+  };
+  updateThreshold();
+  window.addEventListener("resize", updateThreshold, { passive: true });
+
+  const updateVisibility = (scrollY) => {
+    const scroll = typeof scrollY === "number" ? scrollY : (lenis.scroll || window.scrollY);
+    button.classList.toggle("is-visible", scroll > threshold);
   };
 
-  window.addEventListener("scroll", () => {
-    if (visibilityFrame) return;
-    visibilityFrame = requestAnimationFrame(updateVisibility);
-  }, { passive: true });
+  lenis.on("scroll", ({ scroll }) => {
+    updateVisibility(scroll);
+  });
 
   button.addEventListener("click", () => {
     smoothScrollToElement(hero, { offset: 0 }).then((completed) => {
@@ -295,13 +198,25 @@ function initialiseGraphBackground() {
     }
   }
 
+  const particleBuckets = Array.from({ length: 16 }, () => []);
+  const bucketColors = Array.from({ length: 16 }, () => "");
+
+  function updateBucketColors() {
+    for (let index = 0; index < 16; index += 1) {
+      bucketColors[index] = `rgba(${index < 8 ? ink : signal}, ${(index % 8 + 1) / 8})`;
+    }
+  }
+
   function paintParticles(target, collection, time, interact = false) {
-    const paths = Array.from({ length: 16 }, () => new Path2D());
+    for (let index = 0; index < 16; index += 1) {
+      particleBuckets[index].length = 0;
+    }
     const influenceRadius = Math.min(240, Math.max(155, width * 0.16));
     const speed = Math.hypot(cursor.velocityX, cursor.velocityY);
     const swirl = Math.max(-34, Math.min(34, (cursor.velocityX - cursor.velocityY) * 1.4));
 
-    for (const particle of collection) {
+    for (let i = 0; i < collection.length; i += 1) {
+      const particle = collection[i];
       const broadWave = Math.sin(particle.x * 0.011 + time * 1.7 + particle.phase * 0.16);
       const crossWave = Math.sin((particle.x + particle.y) * 0.007 - time * 1.25 + particle.phase);
       const ribbon = (1 - Math.abs(Math.sin(particle.x * 0.008 + particle.y * 0.004 - time))) ** 3;
@@ -326,18 +241,27 @@ function initialiseGraphBackground() {
 
       const alpha = particle.accent ? 0.44 + energy * 0.52 : particle.bright ? 0.58 : 0.12 + energy * 0.27;
       const bucket = Math.max(0, Math.min(7, Math.round(alpha * 8) - 1));
-      const path = paths[bucket + (particle.accent ? 8 : 0)];
       const radius = particle.accent
         ? particle.size * 0.95
         : particle.size * (0.45 + energy * 0.18);
-      path.moveTo(x + radius, y);
-      path.arc(x, y, radius, 0, Math.PI * 2);
+      const bucketIndex = bucket + (particle.accent ? 8 : 0);
+      particleBuckets[bucketIndex].push(x, y, radius);
     }
 
-    paths.forEach((path, index) => {
-      target.fillStyle = `rgba(${index < 8 ? ink : signal}, ${(index % 8 + 1) / 8})`;
-      target.fill(path);
-    });
+    for (let index = 0; index < 16; index += 1) {
+      const bucketData = particleBuckets[index];
+      if (bucketData.length === 0) continue;
+      target.fillStyle = bucketColors[index];
+      target.beginPath();
+      for (let j = 0; j < bucketData.length; j += 3) {
+        const px = bucketData[j];
+        const py = bucketData[j + 1];
+        const pr = bucketData[j + 2];
+        target.moveTo(px + pr, py);
+        target.arc(px, py, pr, 0, Math.PI * 2);
+      }
+      target.fill();
+    }
   }
 
   function resize() {
@@ -352,6 +276,7 @@ function initialiseGraphBackground() {
     buildSheet();
     ink = groundInkRgb();
     signal = themeToken("--signal-rgb", "36 87 214").replace(/\s+/g, ", ");
+    updateBucketColors();
     staticContext.setTransform(dpr, 0, 0, dpr, 0, 0);
     staticContext.clearRect(0, 0, width, height);
     paintParticles(staticContext, staticParticles, 0);
@@ -362,6 +287,7 @@ function initialiseGraphBackground() {
   function draw(timestamp) {
     frame = 0;
     if (!motion.matches && visible && !document.hidden) frame = requestAnimationFrame(draw);
+    if (lenis.isScrolling) return;
     if (timestamp - lastDraw < frameInterval - 1) return;
     lastDraw = timestamp;
     const time = timestamp * 0.00034;
@@ -573,7 +499,7 @@ function buildEntityGraph(map) {
 function initialiseCompilerRail() {
   const rail = document.querySelector(".compiler-rail");
   const stages = [...document.querySelectorAll(".compiler-stage")];
-  if (!rail || !stages.length) return;
+  if (!rail || rail.hidden || !stages.length) return;
 
   const graphMap = rail.querySelector("[data-graph-map]");
   if (!graphMap) return;
@@ -976,37 +902,17 @@ function initialiseBenefitHighlights() {
   const section = document.querySelector(".benefit-section");
   if (!section) return;
 
-  const cards = [...section.querySelectorAll("[data-benefit-card]")];
-  const headerParts = [...section.querySelectorAll(".benefit-header > *")];
   const counters = [...section.querySelectorAll("[data-benefit-count]")];
   const velocityBars = [...section.querySelectorAll(".velocity-bars i")];
   const tokenUnits = [...section.querySelectorAll(".token-field i")];
   const modalityParts = [...section.querySelectorAll(".modality-pills span, .modality-pills > i")];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  if (reduceMotion) return;
+  if (reduceMotion || (!counters.length && !velocityBars.length && !tokenUnits.length && !modalityParts.length)) return;
 
   counters.forEach((counter) => { counter.textContent = "00"; });
 
   const reveal = () => {
-    animate(headerParts, {
-      opacity: [0, 1],
-      translateY: [28, 0],
-      duration: 820,
-      delay: stagger(100),
-      ease: "outExpo",
-    });
-
-    animate(cards, {
-      opacity: [0, 1],
-      translateY: [54, 0],
-      scale: [0.955, 1],
-      rotateX: [5, 0],
-      duration: 1050,
-      delay: stagger(150),
-      ease: "outExpo",
-    });
-
     counters.forEach((counter, index) => {
       const state = { value: 0 };
       const target = Number(counter.dataset.benefitCount || 0);
@@ -1057,6 +963,32 @@ function initialiseBenefitHighlights() {
   observer.observe(section);
 }
 
+// A link such as /#faq-does-my-data-leave-my-machine opens that answer, not just the section.
+function initialiseFaqDeepLinks() {
+  const itemFromHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    const item = id ? document.getElementById(id) : null;
+    return item instanceof HTMLDetailsElement && item.classList.contains("faq-item") ? item : null;
+  };
+
+  const openFromHash = () => {
+    const item = itemFromHash();
+    if (!item) return;
+    item.open = true;
+    smoothScrollToElement(item);
+  };
+
+  window.addEventListener("hashchange", openFromHash);
+
+  // On first load, open right away but scroll only once fonts and media above
+  // have settled; scrolling earlier lands short as the layout grows.
+  const initial = itemFromHash();
+  if (!initial) return;
+  initial.open = true;
+  const settled = document.readyState === "complete" ? Promise.resolve() : new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
+  settled.then(() => document.fonts.ready).then(() => smoothScrollToElement(initial));
+}
+
 function initialiseMultimodalExpansion() {
   const card = document.querySelector("[data-expand-modalities]");
   const overlay = document.querySelector("[data-modalities-overlay]");
@@ -1088,6 +1020,7 @@ function initialiseMultimodalExpansion() {
     dialog.style.transform = "";
     dialog.style.borderRadius = "";
     document.body.classList.remove("modal-open");
+    lenis.start();
     card.setAttribute("aria-expanded", "false");
     isOpen = false;
     isClosing = false;
@@ -1102,6 +1035,7 @@ function initialiseMultimodalExpansion() {
     overlay.hidden = false;
     overlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
+    lenis.stop();
     card.setAttribute("aria-expanded", "true");
 
     const destinationRect = dialog.getBoundingClientRect();
@@ -1628,7 +1562,7 @@ function initialiseContactForm() {
 }
 
 initialiseContactForm();
-initialiseMorphicNavbar();
+initialiseMorphicNavbar({ scrollToTarget: smoothScrollToElement });
 initialiseOffscreenMotion();
 initialiseScrollParallax();
 initialiseToTopButton();
@@ -1638,3 +1572,4 @@ initialiseBenefitHighlights();
 initialiseUseCaseCarousel();
 initialiseTerminalDemo();
 initialiseMultimodalExpansion();
+initialiseFaqDeepLinks();
