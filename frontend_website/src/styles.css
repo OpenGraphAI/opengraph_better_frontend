@@ -4436,9 +4436,21 @@ body.modal-open .to-top-button {
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 .site-footer {
-  padding: clamp(56px, 6vw, 88px) clamp(24px, 5vw, 76px) clamp(28px, 3vw, 40px);
+  --footer-gutter: clamp(24px, 5vw, 76px);
+  padding: clamp(56px, 6vw, 88px) var(--footer-gutter) 0;
   color: var(--panel-ink);
   background: var(--panel-deep);
+}
+
+/* Interactive pixel field along the bottom edge (src/footer-pixels.js). It runs
+   edge to edge, so it cancels the footer's side gutters. */
+.footer-pixels {
+  display: block;
+  width: calc(100% + 2 * var(--footer-gutter));
+  height: clamp(150px, 18vw, 260px);
+  margin: clamp(28px, 3vw, 40px) calc(-1 * var(--footer-gutter)) 0;
+  background: #000;
+  touch-action: pan-y;
 }
 
 .footer-shell {

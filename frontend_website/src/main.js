@@ -6,6 +6,7 @@ import "./bento.css";
 import "./bento-demos.css";
 import "./bento-scenes.css";
 import { initialiseMorphicNavbar } from "./site-nav.js";
+import { initialiseFooterPixels } from "./footer-pixels.js";
 import { initialiseConfidenceThreshold, initialiseEvidenceTrace, initialiseProvenanceInspector, initialiseShots } from "./bento.js";
 
 const lenis = new Lenis({
@@ -1283,3 +1284,4 @@ initialiseConfidenceThreshold();
 initialiseProvenanceInspector();
 initialiseTerminalDemo();
 initialiseFaqDeepLinks();
+initialiseFooterPixels();

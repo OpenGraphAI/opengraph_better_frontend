@@ -110,6 +110,8 @@ export function renderSiteFooter({ home }) {
         <span>OPEN SOURCE · APACHE 2.0</span>
         <span>© 2026 OpenGraph AI</span>
       </div>
+
+      <canvas class="footer-pixels" data-footer-pixels aria-hidden="true"></canvas>
     </footer>`;
 }
 

@@ -1,6 +1,7 @@
 import "./styles.css";
 import "./page.css";
 import { initialiseMorphicNavbar } from "./site-nav.js";
+import { initialiseFooterPixels } from "./footer-pixels.js";
 
 const COPY_RESET_MS = 1400;
 
@@ -66,3 +67,4 @@ function initialiseTocHighlight() {
 initialiseMorphicNavbar();
 initialiseCodeCopy();
 initialiseTocHighlight();
+initialiseFooterPixels();
