@@ -302,113 +302,193 @@ input.addEventListener('keydown', e => {
 });
 $('#send').onclick = send;
 
+/* ============================================================
+   Landing demo (?demo=prompt)
+   A looping, staged run: the prompt types into a lit composer,
+   fires, Claude queries OpenGraph, the graph path assembles node
+   by node, and the answer streams in word by word before the
+   cited path lights up. Example output, not a recorded run.
+   ============================================================ */
 if (promptDemo) {
   const prompt = 'Build a graph from ./robot-observations. How is the gripper related to the yellow cloth?';
-  const demoBlocks = [];
+  const path = ['observation_03', 'contains', 'robot_gripper', 'holding', 'yellow_cloth'];
+  const answerHtml = '<p><strong>Found the connection.</strong> In <code>observation_03</code>, the <code>robot_gripper</code> is holding the <code>yellow_cloth</code>.</p>';
+  const HOLD_MS = 4200;
+  const WORD_MS = 42;
+
+  const root = document.documentElement;
+  const composer = $('.composer');
+  const sendBtn = $('#send');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const timers = new Set();
   let visible = window.parent === window;
   let running = false;
-  const schedule = (callback, delay) => {
-    const timer = window.setTimeout(() => {
-      timers.delete(timer);
-      callback();
-    }, delay);
+  let runId = 0;
+
+  // Every pause goes through here, so stopping the demo cancels the whole run.
+  const sleep = ms => new Promise(resolve => {
+    const timer = window.setTimeout(() => { timers.delete(timer); resolve(); }, ms);
     timers.add(timer);
+  });
+
+  const column = () => {
+    let col = stream.querySelector('.col');
+    if (!col) { col = el('div', 'col'); stream.replaceChildren(col); }
+    return col;
+  };
+  const append = node => {
+    column().append(node);
+    stream.scrollTo({ top: stream.scrollHeight, behavior: motion.matches ? 'auto' : 'smooth' });
+    return node;
   };
 
-  const showResult = () => {
-    demoBlocks.length = 0;
-    demoBlocks.push(
-      { t: 'said', text: prompt },
-      {
-        t: 'act',
-        label: 'Called OpenGraph build_graph',
-        body: 'observation_03 → contains → robot_gripper\nrobot_gripper → holding → yellow_cloth',
-      },
-      {
-        t: 'prose',
-        html: '<p><strong>Found the connection.</strong> In <code>observation_03</code>, the <code>robot_gripper</code> is holding the <code>yellow_cloth</code>.</p>',
-      },
-    );
+  const callRow = () => el('div', 'demo-call',
+    `<span class="demo-call-state" aria-hidden="true"></span>
+     <span>Called <b>OpenGraph</b> build_graph</span>
+     <span class="demo-call-count">0 nodes · 0 edges</span>`);
+
+  const pathPart = (label, index) => {
+    const isEdge = index % 2 === 1;
+    const part = isEdge
+      ? el('span', 'demo-edge', `<em>${esc(label)}</em><i></i>`)
+      : el('span', 'demo-node' + (index === path.length - 1 ? ' is-hit' : ''), esc(label));
+    part.style.setProperty('--d', `${index * 110}ms`);
+    return part;
+  };
+
+  // Wrap each word of the answer so CSS can stream it in on a stagger.
+  function splitWords(node) {
+    let count = 0;
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+    texts.forEach(text => {
+      const frag = document.createDocumentFragment();
+      text.textContent.split(/(\s+)/).forEach(piece => {
+        if (!piece) return;
+        if (/^\s+$/.test(piece)) { frag.append(piece); return; }
+        const word = el('span', 'w', esc(piece));
+        word.style.setProperty('--i', count++);
+        frag.append(word);
+      });
+      text.replaceWith(frag);
+    });
+    return count;
+  }
+
+  function reset() {
+    input.value = prompt; sync(); // reserve the full prompt height once
     input.value = '';
-    sync();
-    render(demoBlocks);
-  };
+    composer.classList.remove('is-typing', 'has-text');
+    sendBtn.classList.remove('is-firing');
+    stream.replaceChildren(el('div', 'col'));
+    root.classList.remove('demo-complete');
+  }
 
-    const runDemo = (shouldFade = false) => {
-      const begin = () => {
-        document.documentElement.classList.remove('demo-complete');
-        demoBlocks.length = 0;
-        // Reserve the complete prompt height once, avoiding layout per letter.
-        input.value = prompt;
-        sync();
-        input.value = '';
-        render(demoBlocks);
-        document.documentElement.classList.remove('demo-resetting');
+  // Final frame, with no motion: shown off screen and for reduced motion.
+  function showResult() {
+    reset();
+    root.classList.add('demo-static');
+    append(el('div', 'said', esc(prompt)));
+    const call = append(callRow());
+    call.classList.add('is-done');
+    call.querySelector('.demo-call-count').textContent = '3 nodes · 2 edges';
+    const trace = append(el('div', 'demo-trace'));
+    path.forEach((label, index) => trace.append(pathPart(label, index)));
+    append(el('div', 'prose', answerHtml));
+    root.classList.add('demo-complete');
+  }
 
-        let index = 0;
-        const typeNext = () => {
-          input.value = prompt.slice(0, index);
-          index += 1;
+  async function play(id) {
+    const live = () => id === runId;
+    root.classList.remove('demo-static');
+    reset();
+    root.classList.remove('demo-resetting');
+    await sleep(500);
 
-          if (index <= prompt.length) {
-            schedule(typeNext, 40);
-            return;
-          }
+    // 1. Type into a lit composer, with a human rhythm.
+    composer.classList.add('is-typing');
+    for (let i = 1; i <= prompt.length && live(); i += 1) {
+      input.value = prompt.slice(0, i);
+      composer.classList.add('has-text');
+      await sleep(/[.?,]/.test(prompt[i - 1]) ? 150 : 16 + Math.random() * 30);
+    }
+    await sleep(320);
 
-          schedule(() => {
-            demoBlocks.push({ t: 'said', text: prompt });
-            input.value = '';
-            sync();
-            render(demoBlocks);
+    // 2. Fire.
+    sendBtn.classList.add('is-firing');
+    composer.classList.remove('is-typing');
+    await sleep(140);
+    input.value = ''; sync();
+    composer.classList.remove('has-text');
+    append(el('div', 'said demo-pop', esc(prompt)));
+    await sleep(420);
+    sendBtn.classList.remove('is-firing');
 
-            schedule(() => {
-              demoBlocks.push({
-                t: 'act',
-                label: 'Called OpenGraph build_graph',
-                body: 'observation_03 → contains → robot_gripper\nrobot_gripper → holding → yellow_cloth',
-              });
-              render(demoBlocks);
-            }, 650);
+    // 3. Think.
+    const thinking = append(el('div', 'demo-thinking', `${logo(18)}<span>Querying OpenGraph</span>`));
+    await sleep(1150);
+    thinking.classList.add('is-leaving');
+    await sleep(200);
+    thinking.remove();
 
-            schedule(() => {
-              demoBlocks.push({
-                t: 'prose',
-                html: '<p><strong>Found the connection.</strong> In <code>observation_03</code>, the <code>robot_gripper</code> is holding the <code>yellow_cloth</code>.</p>',
-              });
-              render(demoBlocks);
-              document.documentElement.classList.add('demo-complete');
-            }, 1450);
-          }, 560);
-        };
+    // 4. The tool call assembles the graph path, node by node.
+    const call = append(callRow());
+    const count = call.querySelector('.demo-call-count');
+    const trace = append(el('div', 'demo-trace'));
+    let nodes = 0;
+    let edges = 0;
+    for (let index = 0; index < path.length && live(); index += 1) {
+      const part = pathPart(path[index], index);
+      part.style.setProperty('--d', '0ms');
+      trace.append(part);
+      if (index % 2) edges += 1; else nodes += 1;
+      count.textContent = `${nodes} node${nodes === 1 ? '' : 's'} · ${edges} edge${edges === 1 ? '' : 's'}`;
+      count.classList.remove('is-ticking');
+      void count.offsetWidth; // restart the tick animation
+      count.classList.add('is-ticking');
+      await sleep(index % 2 ? 380 : 300);
+    }
+    call.classList.add('is-done');
+    await sleep(450);
 
-        schedule(typeNext, shouldFade ? 320 : 700);
-      };
+    // 5. Stream the answer, then light the cited path.
+    const prose = append(el('div', 'prose demo-stream', answerHtml));
+    const words = splitWords(prose);
+    await sleep(words * WORD_MS + 380);
+    prose.querySelectorAll('code').forEach((code, index) => {
+      code.style.setProperty('--d', `${index * 140}ms`);
+      code.classList.add('is-lit');
+    });
+    [...trace.children].forEach((part, index) => part.style.setProperty('--d', `${index * 110}ms`));
+    trace.classList.add('is-cited');
+    root.classList.add('demo-complete');
+    await sleep(HOLD_MS);
 
-      if (shouldFade) {
-        document.documentElement.classList.add('demo-resetting');
-        schedule(begin, 300);
-      } else {
-        begin();
-      }
-    };
+    // 6. Fade out and go again.
+    if (!live()) return;
+    root.classList.add('demo-resetting');
+    await sleep(340);
+    if (live()) play(id);
+  }
 
   const syncPlayback = () => {
     const shouldRun = visible && !document.hidden && !motion.matches;
-    document.documentElement.classList.toggle('demo-paused', !shouldRun);
+    root.classList.toggle('demo-paused', !shouldRun);
     if (!shouldRun) {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.forEach(timer => window.clearTimeout(timer));
       timers.clear();
+      runId += 1;
       running = false;
-      document.documentElement.classList.remove('demo-resetting');
+      root.classList.remove('demo-resetting');
       showResult();
     } else if (!running) {
       running = true;
-      runDemo(false);
+      runId += 1;
+      play(runId);
     }
   };
-  window.addEventListener('message', (event) => {
+  window.addEventListener('message', event => {
     if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== 'opengraph-demo-visibility') return;
     visible = event.data.visible === true;
     syncPlayback();
