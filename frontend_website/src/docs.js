@@ -667,6 +667,28 @@ function scrollChatToBottom() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// iOS Safari (and Android browsers that ignore interactive-widget) draw the
+// keyboard over the page without resizing it, which hides the fixed composer
+// and the bottom of the chat drawer. Publish the visible area to CSS instead.
+function trackVisibleViewport() {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const root = document.documentElement;
+  const update = () => {
+    // A pinch-zoomed page also shrinks the visual viewport; that is not a keyboard.
+    if (Math.abs(viewport.scale - 1) > 0.01) return;
+    const keyboardInset = Math.max(0, root.clientHeight - viewport.height - viewport.offsetTop);
+    root.style.setProperty("--docs-keyboard-inset", `${Math.round(keyboardInset)}px`);
+    root.style.setProperty("--docs-visible-top", `${Math.round(viewport.offsetTop)}px`);
+    root.style.setProperty("--docs-visible-height", `${Math.round(viewport.height)}px`);
+    // Keep the latest message in view while typing a reply.
+    if (chatMessages && document.activeElement === chatInput) scrollChatToBottom();
+  };
+  viewport.addEventListener("resize", update);
+  viewport.addEventListener("scroll", update);
+  update();
+}
+
 function isChatNearBottom() {
   return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < chatScrollStickThreshold;
 }
@@ -888,6 +910,8 @@ chatInput?.addEventListener("keydown", (event) => {
     chatForm.requestSubmit();
   }
 });
+
+trackVisibleViewport();
 
 chatClose?.addEventListener("click", closeChatDrawer);
 chatClear?.addEventListener("click", clearChatMessages);

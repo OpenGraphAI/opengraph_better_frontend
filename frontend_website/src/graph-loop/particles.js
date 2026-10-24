@@ -35,8 +35,8 @@ function jitter(rand, amount) {
   return new Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).multiplyScalar(amount);
 }
 
-function buildParticle(rand, sourceIndex) {
-  const source = SOURCES[sourceIndex];
+function buildParticle(rand, sources, sourceIndex) {
+  const source = sources[sourceIndex];
   const home = new Vector3(...source.home);
   const side = Math.sign(home.x);
   const target = NODES[Math.floor(rand() * NODES.length)];
@@ -65,10 +65,10 @@ function buildParticle(rand, sourceIndex) {
   };
 }
 
-export function createParticles(scene) {
+export function createParticles(scene, sources = SOURCES) {
   const rand = createRandom(31);
-  const particles = SOURCES.flatMap((_, s) =>
-    Array.from({ length: PER_SOURCE }, () => buildParticle(rand, s)),
+  const particles = sources.flatMap((_, s) =>
+    Array.from({ length: PER_SOURCE }, () => buildParticle(rand, sources, s)),
   );
   const inkCount = particles.filter((_, i) => i % COBALT_EVERY !== 0).length;
   const ink = new InstancedMesh(

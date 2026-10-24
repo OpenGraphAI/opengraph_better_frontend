@@ -385,7 +385,7 @@ if (promptDemo) {
     root.classList.remove('demo-complete');
   }
 
-  // Final frame, with no motion: shown off screen and for reduced motion.
+  // Final frame, with no motion: shown while the demo is off screen.
   function showResult() {
     reset();
     root.classList.add('demo-static');
@@ -472,8 +472,10 @@ if (promptDemo) {
     if (live()) play(id);
   }
 
+  // The demo is the card's illustration, so it runs even with reduced motion
+  // (only the stream's smooth scrolling is dropped); off screen it rests.
   const syncPlayback = () => {
-    const shouldRun = visible && !document.hidden && !motion.matches;
+    const shouldRun = visible && !document.hidden;
     root.classList.toggle('demo-paused', !shouldRun);
     if (!shouldRun) {
       timers.forEach(timer => window.clearTimeout(timer));
@@ -494,6 +496,5 @@ if (promptDemo) {
     syncPlayback();
   });
   document.addEventListener('visibilitychange', syncPlayback);
-  motion.addEventListener('change', syncPlayback);
   syncPlayback();
 }

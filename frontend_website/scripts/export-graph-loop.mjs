@@ -2,6 +2,7 @@
 //
 //   node scripts/export-graph-loop.mjs                       # full 288-frame export
 //   node scripts/export-graph-loop.mjs --stills=0,4,8.2,9.9  # PNG stills only
+//   node scripts/export-graph-loop.mjs --portrait            # 4:5 phone cut
 //   options: --out=public/video  --frames-dir=/tmp/frames  --fps=24
 //
 // Every frame is rendered from its exact timestamp (frame / fps), so the
@@ -14,8 +15,10 @@ import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { createServer } from "vite";
 
-const WIDTH = 2560;
-const HEIGHT = 1080;
+const WIDE = { width: 2560, height: 1080 };
+const PORTRAIT = { width: 1080, height: 1350 };
+// Phones get a lighter file: the portrait cut is encoded at this width.
+const PORTRAIT_VIDEO_WIDTH = 720;
 const LOOP_SECONDS = 12;
 
 function parseArgs(argv) {
@@ -30,6 +33,7 @@ function parseArgs(argv) {
     out: resolve(args.out ?? "public/video"),
     framesDir: resolve(args["frames-dir"] ?? join(tmpdir(), "graph-loop-frames")),
     stills: args.stills ? args.stills.split(",").map(Number) : null,
+    portrait: args.portrait === "true",
   };
 }
 
@@ -38,11 +42,11 @@ function ffmpeg(args) {
   if (result.status !== 0) throw new Error(`ffmpeg failed: ${args.at(-1)}`);
 }
 
-async function openPage(url) {
+async function openPage(url, { width, height }) {
   const browser = await chromium.launch({
     args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
   });
-  const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector("[data-graph-loop]")?.dataset.state);
   const state = await page.evaluate(() => ({ ...document.querySelector("[data-graph-loop]").dataset }));
@@ -62,7 +66,9 @@ async function main() {
   const server = await createServer({ server: { port: 5199, strictPort: false }, logLevel: "error" });
   await server.listen();
   const base = server.resolvedUrls.local[0];
-  const { browser, page, figure } = await openPage(`${base}graph-loop.html?capture`);
+  const size = opts.portrait ? PORTRAIT : WIDE;
+  const query = opts.portrait ? "capture&portrait" : "capture";
+  const { browser, page, figure } = await openPage(`${base}graph-loop.html?${query}`, size);
 
   try {
     rmSync(opts.framesDir, { recursive: true, force: true });
@@ -86,6 +92,17 @@ async function main() {
     mkdirSync(opts.out, { recursive: true });
     const input = ["-framerate", String(opts.fps), "-i", join(opts.framesDir, "%04d.png"), "-an"];
     const bt709 = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709"];
+    if (opts.portrait) {
+      const scale = ["-vf", `scale=${PORTRAIT_VIDEO_WIDTH}:-2:flags=lanczos`];
+      ffmpeg([
+        ...input, ...scale, "-c:v", "libx264", "-profile:v", "high", "-level", "3.1", "-preset", "slow",
+        "-crf", "26", "-tune", "animation", "-pix_fmt", "yuv420p", ...bt709, "-movflags", "+faststart",
+        join(opts.out, "graph-loop-portrait.mp4"),
+      ]);
+      ffmpeg(["-i", join(opts.framesDir, "0000.png"), ...scale, "-quality", "88", join(opts.out, "graph-loop-portrait-poster.webp")]);
+      process.stdout.write(`wrote ${opts.out}/graph-loop-portrait.mp4 and poster\n`);
+      return;
+    }
     ffmpeg([
       ...input, "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-tune", "animation",
       "-pix_fmt", "yuv420p", ...bt709, "-movflags", "+faststart", join(opts.out, "graph-loop.mp4"),

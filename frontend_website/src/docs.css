@@ -790,7 +790,8 @@ svg { width: 1em; height: 1em; }
   isolation: isolate;
   z-index: 45;
   right: 50%;
-  bottom: 20px;
+  /* Lifted above the on-screen keyboard; docs.js measures it. */
+  bottom: calc(20px + var(--docs-keyboard-inset, 0px));
   width: min(520px, calc(100vw - 32px));
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.2);
@@ -1069,7 +1070,7 @@ svg { width: 1em; height: 1em; }
   .code-block { margin-inline: -6px; }
   .code-action span { display: none; }
   .code-action { width: 29px; height: 29px; justify-content: center; padding: 0; }
-  .docs-assistant { bottom: 12px; width: calc(100vw - 20px); border-radius: 18px; }
+  .docs-assistant { bottom: calc(12px + var(--docs-keyboard-inset, 0px)); width: calc(100vw - 20px); border-radius: 18px; }
   .docs-assistant::after { border-radius: 15px; }
   .docs-assistant-input-shell textarea { padding-inline: 0; }
   .docs-assistant-toolbar { padding-inline: 0; }
@@ -1258,12 +1259,14 @@ svg { width: 1em; height: 1em; }
 
 .docs-chat-drawer {
   position: fixed;
-  inset: 0 0 0 auto;
+  /* Sized to the visible area, so the composer stays above the on-screen keyboard. */
+  top: var(--docs-visible-top, 0px);
+  right: 0;
   z-index: 100;
   display: flex;
   flex-direction: column;
   width: min(460px, 100vw);
-  height: 100dvh;
+  height: var(--docs-visible-height, 100dvh);
   background: var(--chat-bg);
   color: var(--chat-text);
   border-left: 1px solid var(--chat-border);

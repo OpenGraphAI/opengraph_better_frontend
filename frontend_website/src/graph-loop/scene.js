@@ -19,7 +19,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { createAgentOrb } from "./agent-orb.js";
 import { PALETTE, createGraph } from "./graph.js";
-import { MARK, NODES, SOURCES, T, markGroupOf, returnStart, sourceWindow } from "./layout.js";
+import { MARK, NODES, T, markGroupOf, returnStart, sourceWindow, sourcesFor } from "./layout.js";
 import {
   LOOP,
   TAU,
@@ -41,7 +41,14 @@ const FRAME_HALF_WIDTH = 7.6;
 const NARROW_ASPECT = 1.8;
 const NARROW_HALF_WIDTH = 4.3;
 const FRAME_HALF_HEIGHT = 3.3;
+// Portrait frames hold the graph plus the agent at its right edge across, and
+// the rows of sources above and below it.
+const PORTRAIT_HALF_WIDTH = 4.55;
+const PORTRAIT_HALF_HEIGHT = 5.4;
 const REFERENCE_WIDTH = 1400;
+// The ground sits below the lowest source so the bottom row casts shadows on it.
+const GROUND_Y = -3.15;
+const PORTRAIT_GROUND_Y = -5.3;
 
 function cubic(p, u, out) {
   const v = 1 - u;
@@ -63,8 +70,8 @@ function createMaterials() {
   };
 }
 
-function createSources(scene, mats) {
-  return SOURCES.map((source, i) => {
+function createSources(scene, mats, sourceList) {
+  return sourceList.map((source, i) => {
     const object = buildSource(source.kind, mats);
     scene.add(object);
     const home = new Vector3(...source.home);
@@ -133,22 +140,31 @@ function updateSources(sources, t) {
 // The agent flies the same path as before; agent-orb.js owns its look.
 const AGENT_ENTER_PATH = [new Vector3(9.4, 1.3, 0.9), new Vector3(7.2, 1.7, 1.4), new Vector3(5.2, 0.4, 0.8), new Vector3(4.25, 0.3, 0.6)];
 const AGENT_EXIT_PATH = [new Vector3(4.25, 0.3, 0.6), new Vector3(5.4, 0.2, 0.9), new Vector3(7.4, -0.5, 0.6), new Vector3(9.6, -0.7, 0.3)];
+// The portrait frame is narrower, so the agent parks just above the entry node instead.
+const PORTRAIT_AGENT_SHIFT = new Vector3(-0.65, 0.75, 0);
 
-function updateAgent(agent, t) {
+const agentPaths = (portrait) => {
+  const shift = (path) => path.map((point) => point.clone().add(PORTRAIT_AGENT_SHIFT));
+  return portrait
+    ? { enter: shift(AGENT_ENTER_PATH), exit: shift(AGENT_EXIT_PATH) }
+    : { enter: AGENT_ENTER_PATH, exit: AGENT_EXIT_PATH };
+};
+
+function updateAgent(agent, t, paths) {
   const enter = seg(t, ...T.agentEnter);
   const exit = seg(t, ...T.agentExit);
   const { group } = agent;
   group.visible = enter > 0 && exit < 1;
   if (!group.visible) return;
-  if (exit > 0) cubic(AGENT_EXIT_PATH, easeInCubic(exit), group.position);
-  else cubic(AGENT_ENTER_PATH, easeOutCubic(enter), group.position);
+  if (exit > 0) cubic(paths.exit, easeInCubic(exit), group.position);
+  else cubic(paths.enter, easeOutCubic(enter), group.position);
   group.position.x += 0.1 * hump(seg(t, 6.1, 6.55));
   group.position.y += 0.035 * wave(t, 3, 0.5);
   const scale = easeOutBack(seg(t, T.agentEnter[0], T.agentEnter[0] + 0.6)) * (1 - easeInCubic(exit) * 0.6);
   group.scale.setScalar(Math.max(scale, 1e-4));
 }
 
-function createStage(scene) {
+function createStage(scene, groundY) {
   scene.add(new HemisphereLight(0xfffaf1, 0xd9d2c4, 0.85));
   const key = new DirectionalLight(0xffffff, 1.7);
   key.position.set(-4, 9, 6);
@@ -164,7 +180,7 @@ function createStage(scene) {
   scene.add(fill);
   const ground = new Mesh(new PlaneGeometry(60, 60), new ShadowMaterial({ color: 0x3c3428, opacity: 0.06 }));
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -3.15;
+  ground.position.y = groundY;
   ground.receiveShadow = true;
   scene.add(ground);
 }
@@ -182,9 +198,9 @@ function placeCamera(camera, t, baseDistance) {
 /**
  * Builds the loop into `canvas`. `renderAt(t)` is pure in t (seconds, any
  * value; wrapped to [0, LOOP)), so a live player and a frame exporter
- * produce identical frames.
+ * produce identical frames. `portrait` selects the phone composition.
  */
-export function createGraphLoop(canvas, { preserveDrawingBuffer = false } = {}) {
+export function createGraphLoop(canvas, { preserveDrawingBuffer = false, portrait = false } = {}) {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer });
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = SRGBColorSpace;
@@ -200,11 +216,13 @@ export function createGraphLoop(canvas, { preserveDrawingBuffer = false } = {}) 
 
   const camera = new PerspectiveCamera(FOV, 21 / 9, 0.1, 120);
   const mats = createMaterials();
-  createStage(scene);
-  const sources = createSources(scene, mats);
+  createStage(scene, portrait ? PORTRAIT_GROUND_Y : GROUND_Y);
+  const sourceList = sourcesFor(portrait);
+  const sources = createSources(scene, mats, sourceList);
   const agent = createAgentOrb(scene);
+  const paths = agentPaths(portrait);
   const graph = createGraph(scene);
-  const particles = createParticles(scene);
+  const particles = createParticles(scene, sourceList);
 
   const fixedWidthLines = [mats.edge];
   const baseWidths = new Map(fixedWidthLines.map((m) => [m, m.linewidth]));
@@ -216,11 +234,13 @@ export function createGraphLoop(canvas, { preserveDrawingBuffer = false } = {}) 
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    baseDistance = Math.max(
-      FRAME_HALF_HEIGHT / HALF_TAN,
-      (camera.aspect < NARROW_ASPECT ? NARROW_HALF_WIDTH : FRAME_HALF_WIDTH) / (camera.aspect * HALF_TAN),
-    );
-    lineScale = Math.min(2, Math.max(0.75, width / REFERENCE_WIDTH));
+    const wideHalfWidth = camera.aspect < NARROW_ASPECT ? NARROW_HALF_WIDTH : FRAME_HALF_WIDTH;
+    const halfWidth = portrait ? PORTRAIT_HALF_WIDTH : wideHalfWidth;
+    const halfHeight = portrait ? PORTRAIT_HALF_HEIGHT : FRAME_HALF_HEIGHT;
+    baseDistance = Math.max(halfHeight / HALF_TAN, halfWidth / (camera.aspect * HALF_TAN));
+    // Portrait shows fewer world units across, so lines keep the same weight relative to the nodes.
+    const referenceWidth = portrait ? REFERENCE_WIDTH * (PORTRAIT_HALF_WIDTH / FRAME_HALF_WIDTH) : REFERENCE_WIDTH;
+    lineScale = Math.min(2, Math.max(0.75, width / referenceWidth));
     const materials = [...fixedWidthLines, ...graph.lines.map((l) => l.material)];
     for (const material of materials) material.resolution.set(width, height);
     for (const [material, base] of baseWidths) material.linewidth = base * lineScale;
@@ -230,7 +250,7 @@ export function createGraphLoop(canvas, { preserveDrawingBuffer = false } = {}) 
     const t = ((time % LOOP) + LOOP) % LOOP;
     placeCamera(camera, t, baseDistance);
     updateSources(sources, t);
-    updateAgent(agent, t);
+    updateAgent(agent, t, paths);
     agent.update(t, camera);
     graph.update(t, camera, { position: agent.group.position, visible: agent.group.visible }, lineScale);
     particles.update(t);

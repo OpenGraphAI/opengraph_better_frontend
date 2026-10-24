@@ -27,15 +27,25 @@
         height: 1080px;
         aspect-ratio: auto;
       }
+      .graph-loop[data-portrait] {
+        width: min(100vw, 540px);
+        aspect-ratio: 4 / 5;
+      }
+      .graph-loop[data-capture][data-portrait] {
+        width: 1080px;
+        height: 1350px;
+        aspect-ratio: auto;
+      }
     </style>
   </head>
   <body>
-    <!-- Preview: /graph-loop.html. Frame export: /graph-loop.html?capture -->
+    <!-- Preview: /graph-loop.html (add ?portrait for the phone cut). Frame export: /graph-loop.html?capture -->
     <figure class="graph-loop" data-graph-loop data-grid aria-hidden="true"><canvas></canvas></figure>
     <script type="module">
-      if (new URLSearchParams(location.search).has("capture")) {
-        document.querySelector("[data-graph-loop]").setAttribute("data-capture", "");
-      }
+      const params = new URLSearchParams(location.search);
+      const figure = document.querySelector("[data-graph-loop]");
+      if (params.has("capture")) figure.setAttribute("data-capture", "");
+      if (params.has("portrait")) figure.setAttribute("data-portrait", "");
     </script>
     <script type="module" src="/src/graph-loop/mount.js"></script>
   </body>

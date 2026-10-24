@@ -16,7 +16,11 @@ documentation links still resolve in the client. Canonicals and the sitemap use
 `https://opengraphai.io`, the site's existing public domain.
 
 The landing-page graph uses `public/video/graph-loop-1440.mp4` (muted, lazy-loaded,
-and paused outside the viewport). The Three.js scene remains available in
-`graph-loop.html` for animation authoring and export. Hero dots are capped at 24
-fps; reduced-motion preferences disable automatic motion. Embedded demo fonts
+and paused outside the viewport). Screens up to 600px wide get a 4:5 portrait cut,
+`public/video/graph-loop-portrait.mp4`, re-rendered with
+`node scripts/export-graph-loop.mjs --portrait` (`*.mp4` is gitignored, so add it
+with `git add -f`). The Three.js scene remains available in `graph-loop.html`
+(`?portrait` previews the phone cut) for animation authoring and export. Hero dots
+are capped at 24 fps; reduced-motion preferences disable automatic motion, except
+the graph video and the demo loops, which are the page's illustrations. Embedded demo fonts
 use Latin WOFF2 subsets, with the original font files retained for other uses.

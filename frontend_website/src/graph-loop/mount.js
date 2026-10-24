@@ -15,7 +15,7 @@ async function start(figure) {
   let loop;
   try {
     const { createGraphLoop } = await loadScene();
-    loop = createGraphLoop(canvas, { preserveDrawingBuffer: capture });
+    loop = createGraphLoop(canvas, { preserveDrawingBuffer: capture, portrait: figure.hasAttribute("data-portrait") });
   } catch (error) {
     figure.dataset.state = "unsupported";
     figure.dataset.error = String(error?.message ?? error);

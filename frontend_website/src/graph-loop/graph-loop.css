@@ -52,3 +52,16 @@
     margin-inline: calc(50% - 50vw);
   }
 }
+
+/* Phones play the 4:5 portrait cut (video.js swaps the file at the same
+   breakpoint), so the graph fills the screen width instead of a thin strip. */
+@media (max-width: 600px) {
+  .graph-loop:has(video) {
+    aspect-ratio: 4 / 5;
+  }
+
+  .graph-loop video {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 3% 97%, transparent), linear-gradient(0deg, transparent, #000 6% 94%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 3% 97%, transparent), linear-gradient(0deg, transparent, #000 6% 94%, transparent);
+  }
+}

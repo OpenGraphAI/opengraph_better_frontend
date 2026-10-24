@@ -12,6 +12,21 @@ export const SOURCES = [
   { kind: "database", home: [3.4, -2.45, -0.6], node: "S5" },
 ];
 
+// Phones get a 4:5 portrait frame: the graph keeps its shape and the sources
+// rest in a row above and a row below it instead of at the far left and right.
+const PORTRAIT_HOMES = {
+  document: [-3.0, 3.75, 0.0],
+  waveform: [-0.45, 4.35, -1.2],
+  image: [2.85, 3.8, -0.3],
+  table: [-2.9, -3.8, 0.8],
+  database: [0.4, -4.3, -0.6],
+  code: [2.95, -3.7, 0.7],
+};
+
+/** Source objects for the wide (default) or portrait composition. */
+export const sourcesFor = (portrait) =>
+  portrait ? SOURCES.map((source) => ({ ...source, home: PORTRAIT_HOMES[source.kind] })) : SOURCES;
+
 // role: source | hub | entry | leaf. `order` staggers the build.
 export const NODES = [
   { id: "S0", pos: [-2.9, 0.9, 0.3], r: 0.19, role: "source" },

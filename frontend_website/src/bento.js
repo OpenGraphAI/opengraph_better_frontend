@@ -1,8 +1,6 @@
 // Interactive cards in the landing-page bento grid. Each card works without
 // JavaScript in its final state; these functions add the motion and controls.
 
-const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 const TRACE_FINAL_STEP = 3;
 const TRACE_STEP_MS = 1000;
 const TRACE_START_DELAY_MS = 450;
@@ -58,12 +56,10 @@ export function initialiseEvidenceTrace() {
     parts.forEach((part) => part.classList.toggle("is-lit", Number(part.dataset.hop) <= step));
   };
 
+  // Hops light one at a time even with reduced motion: each step is a fade,
+  // and the order is what the card explains.
   const play = () => {
     timers.forEach((timer) => window.clearTimeout(timer));
-    if (prefersReducedMotion()) {
-      showStep(TRACE_FINAL_STEP);
-      return;
-    }
     showStep(-1);
     timers = Array.from({ length: TRACE_FINAL_STEP + 1 }, (_, step) =>
       window.setTimeout(() => showStep(step), TRACE_START_DELAY_MS + step * TRACE_STEP_MS));
@@ -72,7 +68,7 @@ export function initialiseEvidenceTrace() {
   replay?.addEventListener("click", play);
 
   // Hidden until the first play so the drawing reads as the agent working.
-  showStep(prefersReducedMotion() ? TRACE_FINAL_STEP : -1);
+  showStep(-1);
 
   const observer = new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) return;
