@@ -106,11 +106,14 @@ body {
 .embed-prompt-demo body {
   padding:0;
   background:#fff;
+  overflow:hidden;
 }
 
+/* The embed fills its iframe exactly: the crumb and dock keep their size and
+   the stream takes what is left, clipping (and scrolling) everything it shows. */
 .embed-prompt-demo .window {
   width:100%;
-  height:392px;
+  height:100vh;
   padding:0;
   border:0;
   border-radius:0;
@@ -120,23 +123,46 @@ body {
 .embed-prompt-demo .sidebar { display:none; }
 .embed-prompt-demo .main {
   width:100%;
-  height:392px;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
 }
 .embed-prompt-demo .crumb {
+  flex:none;
   width:100%;
+  min-width:0;
   padding:15px 20px 11px;
   border-bottom:1px solid var(--panel-line);
+  white-space:nowrap;
 }
+.embed-prompt-demo .crumb .repo {
+  flex:0 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.embed-prompt-demo .crumb .slash { flex:none; }
+.embed-prompt-demo .crumb .task { flex:1 1 0; overflow:hidden; }
 .embed-prompt-demo .stream {
-  flex:0 0 224px;
+  flex:1 1 0;
+  min-height:0;
   padding:14px 20px 4px;
+  overflow:hidden;
+  overscroll-behavior:contain;
   transition:opacity .28s ease, transform .34s cubic-bezier(.22,1,.36,1);
 }
-.embed-prompt-demo .col { width:100%; }
+.embed-prompt-demo .col { width:100%; min-width:0; }
 .embed-prompt-demo .dock {
+  flex:none;
   width:100%;
   padding:8px 20px 16px;
   transition:opacity .28s ease, transform .34s cubic-bezier(.22,1,.36,1);
+}
+/* The prompt is long; while it types the composer shows its last lines
+   instead of growing over the conversation. */
+.embed-prompt-demo .composer textarea {
+  max-height:68px;
+  overflow:hidden;
 }
 .embed-prompt-demo .said {
   max-width:92%;
@@ -502,18 +528,16 @@ input, textarea { font:inherit; }
 }
 
 @media (max-width:420px) {
-  .embed-prompt-demo .window,
-  .embed-prompt-demo .main {
-    height:470px;
-  }
-
   .embed-prompt-demo .crumb {
     padding:15px 14px 11px;
   }
 
   .embed-prompt-demo .stream {
-    flex:0 0 290px;
     padding:14px 14px 4px;
+  }
+
+  .embed-prompt-demo .composer textarea {
+    max-height:45px;
   }
 
   .embed-prompt-demo .dock {

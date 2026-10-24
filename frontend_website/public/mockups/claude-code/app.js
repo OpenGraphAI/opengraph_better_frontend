@@ -410,6 +410,7 @@ if (promptDemo) {
     composer.classList.add('is-typing');
     for (let i = 1; i <= prompt.length && live(); i += 1) {
       input.value = prompt.slice(0, i);
+      input.scrollTop = input.scrollHeight; // keep the line being typed in view
       composer.classList.add('has-text');
       await sleep(/[.?,]/.test(prompt[i - 1]) ? 150 : 16 + Math.random() * 30);
     }
