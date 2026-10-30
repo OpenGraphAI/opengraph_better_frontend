@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test scripts/",
     "perf": "node scripts/perf-check.mjs",
     "encode:graph-loop": "node scripts/encode-graph-loop.mjs"
   },
