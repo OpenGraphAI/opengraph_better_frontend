@@ -389,3 +389,11 @@
     max-width: 620px;
   }
 }
+
+/* Like the header specimen, narrow screens drop the confidence column so each
+   edge reads as one short sentence. */
+@media (max-width: 700px) {
+  .row-score {
+    display: none;
+  }
+}
