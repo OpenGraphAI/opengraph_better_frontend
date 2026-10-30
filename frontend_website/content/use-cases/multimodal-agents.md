@@ -18,7 +18,7 @@ Install the ones you need and register them together.
 
 The agent queries the table graph for sites marked damaged, the text graph for the manual's procedure, and the image graph for the matching photos. It combines the three with a citation for each step and flags any site where the photos do not support the report. As with every server: summarize first, query second, and inspect individual sources only when an answer needs verification.
 
-```visual:exchange Example output
+```visual:exchange
 you: Which sites in site-reports.xlsx were marked damaged, what does the manual say to do, and do the photos in ./site-photos show the damage?
 -> opengraph-table: query_graph("Which sites are marked damaged?", "./reports")
 -> opengraph-text: query_graph("What is the procedure for this damage?", "./manuals")
@@ -31,7 +31,7 @@ agent: Two sites are marked damaged. The manual's procedure applies to both, and
 
 A cell stays tied to its row and column, a claim to its document, an object to its image; nothing is flattened into undifferentiated chunks. `acquired`, `on_top_of`, and a metric's source cell mean different things, and the agent can treat them differently. Every step points to a file a person can open and check.
 
-```visual:chips From the docs
+```visual:chips
 acquired
 *on_top_of
 contains_metric

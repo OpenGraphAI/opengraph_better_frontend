@@ -7,7 +7,7 @@ Retrieval over documents usually means cutting text into chunks and hoping the r
 
 Point it at a folder of .txt, .md, and .pdf files. It records who and what each document mentions, the topics it covers, the claims it makes, and how the people, organizations, and places in it relate. Every node and edge carries a confidence score.
 
-```visual:edges Example output
+```visual:edges
 @ board-notes-q3.pdf
 Acme Robotics | acquired | Beta Logistics | 0.91
 Dana Ruiz | works_at | Acme Robotics | 0.88
@@ -19,7 +19,7 @@ Acme Robotics | located_in | Austin | 0.86
 
 Entities connect through a fixed set of relations. "Which reports say Acme acquired Beta?" means following an `acquired` edge, then pointing to the files that support it.
 
-```visual:chips From the docs
+```visual:chips
 works_at
 founded
 invested_in
@@ -36,7 +36,7 @@ mentions
 
 Entities with the same normalized name and type merge across documents into one node that records every document it was `seen_in`. Topics and attributes merge the same way.
 
-```visual:fan Example output
+```visual:fan
 Acme Robotics
 seen_in
 board-notes-q3.pdf
@@ -49,7 +49,7 @@ partner-call.txt
 
 Claims are never merged. Each stays linked to the document that states it, so an agent can report the disagreement and cite both sources instead of quietly picking one.
 
-```visual:edges Example output
+```visual:edges
 board-notes-q3.pdf | states | "Acme opened a second plant in 2025."
 partner-call.txt | states | "Acme's second plant opens in 2026."
 ```
@@ -59,7 +59,7 @@ partner-call.txt | states | "Acme's second plant opens in 2026."
 
 Build, list, inspect, and query from Claude or any MCP client. Graphs resolve by folder: name the folder and the server finds the graph inside it. A sixth tool, `build_graph_html`, is on the main branch and ships with the next release.
 
-```visual:exchange Example output
+```visual:exchange
 you: Which reports say Acme acquired Beta?
 -> query_graph("Which reports say Acme acquired Beta?", "./reports")
 agent: board-notes-q3.pdf and market-scan.md both state it.

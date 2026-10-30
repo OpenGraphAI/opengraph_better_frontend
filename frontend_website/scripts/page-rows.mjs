@@ -8,7 +8,7 @@
  *   ### What the model sees, kept as a graph. <- row heading (rendered as <h2>)
  *   One or two sentences.
  *
- *   ```visual:edges Example output            <- visual type, then its tag
+ *   ```visual:edges                           <- visual type
  *   @ kitchen-01.jpg                          <- optional caption
  *   mug | on_top_of | table | 0.94
  *   ```
@@ -22,10 +22,6 @@
  *   fan       hub node, relation, then one tile per line
  *   exchange  "you: text", "agent: text", or "-> tool_call(...)"
  *   terminal  lines shown as typed; a leading "$ " marks a prompt
- *
- * Every visual must say what it is: "Example output" for output we assembled
- * from the docs, "From the docs" for documented facts. Anything else fails
- * the build, so no example can pass for a real run.
  */
 
 import hljs from "highlight.js/lib/core";
@@ -42,7 +38,6 @@ hljs.registerLanguage("json", json);
 hljs.registerLanguage("python", python);
 hljs.registerLanguage("text", plaintext);
 
-const VISUAL_TAGS = ["Example output", "From the docs"];
 const RESERVED = { "good to know": "goodToKnow", "go deeper": "goDeeper" };
 const codeLabels = { bash: "Terminal", shell: "Terminal", python: "Python", json: "JSON" };
 
@@ -114,12 +109,11 @@ const VISUALS = {
   },
 };
 
-/** One visual panel. Throws on an unknown type or a missing or unknown tag. */
-export function renderVisual(type, tag, source) {
-  const render = VISUALS[type];
+/** One visual panel. Throws on an unknown visual type. */
+export function renderVisual(type, source) {
+  const render = Object.hasOwn(VISUALS, type) ? VISUALS[type] : null;
   if (!render) throw new Error(`Unknown visual type "${type}"; use ${Object.keys(VISUALS).join(", ")}`);
-  if (!VISUAL_TAGS.includes(tag)) throw new Error(`Visual "${type}" needs a tag: "${VISUAL_TAGS.join('" or "')}" (got "${tag ?? ""}")`);
-  return `<figure class="page-row-visual row-visual-${type}"><span class="row-visual-tag">${escapeHtml(tag)}</span>${render(source)}</figure>`;
+  return `<figure class="page-row-visual row-visual-${type}">${render(source)}</figure>`;
 }
 
 function toRow(heading, tokens, links) {
@@ -128,8 +122,8 @@ function toRow(heading, tokens, links) {
   const body = tokens.filter((token) => token !== subheading && token !== visual);
   let visualHtml = null;
   if (visual) {
-    const [, type, tag] = visual.lang.match(/^visual:(\S+)\s*(.*)$/);
-    visualHtml = renderVisual(type, tag.trim(), visual.text);
+    const [, type] = visual.lang.match(/^visual:(\S+)/);
+    visualHtml = renderVisual(type, visual.text);
   }
   return {
     label: subheading ? heading.text : "",

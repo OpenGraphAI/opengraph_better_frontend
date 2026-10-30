@@ -7,7 +7,7 @@ Most image search stops at filenames, tags, and captions. OpenGraph Image reads 
 
 Objects in the frame, the scene, colors and materials, text that appears in the picture, and how the objects relate. Objects, scenes, attributes, text spans, and every edge carry a confidence score between 0 and 1, so your agent follows edges instead of guessing which caption fits.
 
-```visual:edges Example output
+```visual:edges
 @ park-11.jpg
 person | wearing | backpack | 0.91
 bicycle | next_to | bench | 0.86
@@ -19,7 +19,7 @@ bench | has_attribute | material: wood | 0.83
 
 Relationships come from a small, fixed set. "A mug on a table" matches the same way in every image, not only in the ones whose captions happen to phrase it that way.
 
-```visual:chips From the docs
+```visual:chips
 next_to
 *on_top_of
 inside
@@ -34,7 +34,7 @@ wearing
 
 Objects, scenes, and attributes with the same label merge into one node that records every image it was `seen_in`. "Which photos show a bicycle?" becomes a single lookup rather than a search over captions.
 
-```visual:fan Example output
+```visual:fan
 bicycle
 seen_in
 street-03.jpg
@@ -47,7 +47,7 @@ garage-02.jpg
 
 Claude Code, Claude Desktop, Cursor, or any MCP client can build, inspect, and query the graph. Graphs resolve by folder, so a later session that names `./photos` picks up where the last one stopped.
 
-```visual:exchange Example output
+```visual:exchange
 you: Who is holding an umbrella?
 -> query_graph("Who is holding an umbrella?", "./photos")
 agent: street-14.jpg shows a person holding an umbrella.

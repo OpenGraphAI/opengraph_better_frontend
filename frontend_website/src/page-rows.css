@@ -81,7 +81,7 @@
   position: relative;
   min-width: 0;
   margin: 0;
-  padding: 46px clamp(16px, 2.4vw, 24px) 24px;
+  padding: clamp(18px, 2.4vw, 24px);
   border: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
   border-radius: 14px;
   background: var(--paper);
@@ -89,27 +89,8 @@
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 22px 48px -32px rgb(var(--shadow-rgb) / 0.5);
 }
 
-.row-visual-tag {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  padding: 3px 9px;
-  border: 1px dashed rgb(var(--paper-ink-rgb) / 0.3);
-  border-radius: 999px;
-  color: rgb(var(--paper-ink-rgb) / 0.6);
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* Sits on the tag's line, with the tag's width kept clear, so a long caption
-   wraps beside the tag instead of running under it. */
 .row-caption {
-  max-width: calc(100% - 136px);
-  margin: -30px 0 14px;
+  margin: 0 0 14px;
   color: rgb(var(--paper-ink-rgb) / 0.55);
   font-family: var(--mono);
   font-size: 11.5px;
@@ -231,12 +212,6 @@
   background: var(--panel);
   color: var(--panel-ink);
   box-shadow: 0 22px 48px -30px rgb(var(--shadow-rgb) / 0.6);
-}
-
-.row-visual-exchange .row-visual-tag,
-.row-visual-terminal .row-visual-tag {
-  border-color: rgb(var(--panel-ink-rgb) / 0.25);
-  color: rgb(var(--panel-ink-rgb) / 0.6);
 }
 
 .row-exchange,

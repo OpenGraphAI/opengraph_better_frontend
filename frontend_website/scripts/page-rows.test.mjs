@@ -16,7 +16,7 @@ const SAMPLE = [
   "### What the model sees, kept as a graph.",
   "One or two sentences.",
   "",
-  `${FENCE}visual:edges Example output`,
+  `${FENCE}visual:edges`,
   "@ street-14.jpg",
   "person | holding | umbrella | 0.93",
   "<b> | next_to | building",
@@ -26,7 +26,7 @@ const SAMPLE = [
   "### The same words in every photo.",
   "Seven relationships.",
   "",
-  `${FENCE}visual:chips From the docs`,
+  `${FENCE}visual:chips`,
   "next_to",
   "*on_top_of",
   FENCE,
@@ -39,7 +39,7 @@ const SAMPLE = [
   "### One node, every photo it's in.",
   "Merged by label.",
   "",
-  `${FENCE}visual:fan Example output`,
+  `${FENCE}visual:fan`,
   "bicycle",
   "seen_in",
   "street-03.jpg",
@@ -80,7 +80,7 @@ test("splits H2 sections into rows with label, heading, body and visual", () => 
   assert.equal(rows[0].heading, "What the model sees, kept as a graph.");
   assert.equal(rows[0].id, "beyond-captions");
   assert.match(rows[0].bodyHtml, /One or two sentences\./);
-  assert.match(rows[0].visualHtml, /class="row-visual-tag">Example output</);
+  assert.match(rows[0].visualHtml, /<figure class="page-row-visual row-visual-edges">/);
 });
 
 test("a section without ### uses its label as the heading", () => {
@@ -89,16 +89,15 @@ test("a section without ### uses its label as the heading", () => {
   assert.equal(rows[0].label, "");
 });
 
-test("a visual without a tag is a build error", () => {
-  assert.throws(() => renderRows(`## A\n### B\nC\n\n${FENCE}visual:chips\nx\n${FENCE}`), /needs a tag/);
-});
-
-test("a visual with an unknown tag is a build error", () => {
-  assert.throws(() => renderVisual("chips", "Looks real", "x"), /needs a tag/);
+test("visuals are plain: no tag is rendered on any visual or header card", () => {
+  assert.doesNotMatch(renderVisual("chips", "x"), /tag/);
+  for (const page of contentPages) {
+    assert.doesNotMatch(renderPage(page), /row-visual-tag|example-tag|Example output|From the docs/, page.path);
+  }
 });
 
 test("unknown visual type is a build error", () => {
-  assert.throws(() => renderVisual("pie", "Example output", "x"), /Unknown visual type "pie"/);
+  assert.throws(() => renderVisual("pie", "x"), /Unknown visual type "pie"/);
 });
 
 test("row without visual renders text-only", () => {
@@ -119,7 +118,7 @@ test("every second row with a visual is flipped", () => {
 });
 
 test("edges escape HTML and render the caption and score", () => {
-  const html = renderVisual("edges", "Example output", "@ street-14.jpg\nperson | holding | umbrella | 0.93\n<b> | next_to | building");
+  const html = renderVisual("edges", "@ street-14.jpg\nperson | holding | umbrella | 0.93\n<b> | next_to | building");
   assert.match(html, /street-14\.jpg/);
   assert.match(html, /<span class="row-relation">holding<\/span>/);
   assert.match(html, /<span class="row-score"[^>]*>0\.93<\/span>/);
@@ -128,30 +127,30 @@ test("edges escape HTML and render the caption and score", () => {
 });
 
 test("an edge line without three parts is a build error", () => {
-  assert.throws(() => renderVisual("edges", "Example output", "mug | on_top_of"), /from \| relation \| to/);
+  assert.throws(() => renderVisual("edges", "mug | on_top_of"), /from \| relation \| to/);
 });
 
 test("chips mark the starred chip as highlighted", () => {
-  const html = renderVisual("chips", "From the docs", "next_to\n*on_top_of");
+  const html = renderVisual("chips", "next_to\n*on_top_of");
   assert.match(html, /class="row-chip is-on">on_top_of</);
   assert.match(html, /class="row-chip">next_to</);
 });
 
 test("fan renders a hub, a relation and tiles", () => {
-  const html = renderVisual("fan", "Example output", "bicycle\nseen_in\nstreet-03.jpg\npark-11.jpg");
+  const html = renderVisual("fan", "bicycle\nseen_in\nstreet-03.jpg\npark-11.jpg");
   assert.match(html, /class="row-node is-hub">bicycle</);
   assert.equal([...html.matchAll(/class="row-tile"/g)].length, 2);
 });
 
 test("exchange renders you, agent and tool-call lines", () => {
-  const html = renderVisual("exchange", "Example output", "you: Which photos?\n-> query_graph(question)\nagent: kitchen-01.jpg");
+  const html = renderVisual("exchange", "you: Which photos?\n-> query_graph(question)\nagent: kitchen-01.jpg");
   assert.match(html, /<li class="is-you">/);
   assert.match(html, /<li class="is-call"><code>query_graph\(question\)<\/code>/);
   assert.match(html, /<li class="is-agent">/);
 });
 
 test("terminal marks prompts", () => {
-  const html = renderVisual("terminal", "From the docs", "$ pip install opengraph-image\ndone");
+  const html = renderVisual("terminal", "$ pip install opengraph-image\ndone");
   assert.match(html, /<span class="row-prompt"[^>]*>\$<\/span> pip install opengraph-image/);
 });
 

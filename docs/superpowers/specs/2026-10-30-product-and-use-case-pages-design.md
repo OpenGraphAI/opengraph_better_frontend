@@ -43,7 +43,7 @@ Linear's product pages: clean, not boring, nothing that looks forced.
 2. **Copy: trim and split, keep the meaning.** Today's paragraphs are cut down and
    divided across rows. Nothing that changes what a reader would believe about the
    product may be dropped from the site; it either stays on the page or moves to the docs.
-3. **Visuals: built from the docs, labelled.** Visuals show example output assembled
+3. **Visuals: built from the docs, labelled.** *(Update, same day: after review the owner asked for the tags to be removed and the visuals kept plain; the hero card lost its tag too.)* Visuals show example output assembled
    from what the docs and repository already state. Any visual that shows output carries
    an "Example output" tag (the homepage already uses this tag); a visual that only lists
    documented facts (the relationship vocabulary, the tool names) carries "From the docs".

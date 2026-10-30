@@ -7,7 +7,7 @@ A number in a spreadsheet only means something next to its row label, its column
 
 It turns tables into entities, relationships, metrics, and notes, then writes `graph.json` for agents and code, `graph.html` for browsing, and `graph.md` for people.
 
-```visual:terminal Example output
+```visual:terminal
 $ opengraph-table build ./tables
 tables/opengraph-out/graph.json
 tables/opengraph-out/graph.html
@@ -19,7 +19,7 @@ tables/opengraph-out/graph.md
 
 Columns carry an inferred type: text, numeric, date, or boolean. Metrics hold sums, averages, counts, minimums, maximums, and percentages. Notes record insights, anomalies, and validation checks.
 
-```visual:chips From the docs
+```visual:chips
 source
 column
 *entity
@@ -33,7 +33,7 @@ note
 
 Entities deduplicate by normalized name and type, node IDs are scoped by source so two `id` columns never collide, and next month's export appends without a rebuild.
 
-```visual:terminal From the docs
+```visual:terminal
 $ opengraph-table ingest ./tables-october \
     --graph ./tables/opengraph-out/graph.json
 ```
@@ -43,7 +43,7 @@ $ opengraph-table ingest ./tables-october \
 
 Build, query, and list sources from Claude or any MCP client. When someone drops a CSV into a conversation, `build_graph_from_content` builds a graph from it without first saving the CSV to a folder.
 
-```visual:exchange Example output
+```visual:exchange
 you: Here is our Q3 cost export. Which supplier costs the most?
 -> build_graph_from_content([q3-costs.csv], "./q3/graph.json")
 -> query_graph("Which supplier costs the most?", "./q3/graph.json")

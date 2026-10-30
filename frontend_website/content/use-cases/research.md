@@ -7,7 +7,7 @@ A literature review lives in many places at once: PDFs of papers, figures export
 
 Run [OpenGraph Text](/products/opengraph-text/) over a folder of papers and notes. People, organizations, places, products, concepts, and events merge across papers, so a lab or author appears once with every paper that mentions it; topics merge across the corpus. Claims stay short and literal, each linked to the paper that makes it, and are never merged: when two papers report different results, both stay in the graph with their sources.
 
-```visual:edges Example output
+```visual:edges
 smith-2024.pdf | states | "Dropout held at 14% across both arms."
 patel-2023.pdf | states | "Weekly reminders halved dropout."
 Ravi Patel | works_at | Robotics Group | 0.86
@@ -18,7 +18,7 @@ Ravi Patel | works_at | Robotics Group | 0.86
 
 Ask which papers make claims about sample size, which organizations collaborate and in which papers, or for every claim on a topic with the paper each comes from.
 
-```visual:exchange Example output
+```visual:exchange
 you: List every claim about dropout rates, with the paper each comes from.
 -> query_graph(question, "./papers")
 agent: Three claims, from smith-2024.pdf, patel-2023.pdf, and lee-2025.pdf, quoted with their sources.
@@ -29,7 +29,7 @@ agent: Three claims, from smith-2024.pdf, patel-2023.pdf, and lee-2025.pdf, quot
 
 Figures go through [OpenGraph Image](/products/opengraph-image/), which records visible objects and the text inside the image, such as axis labels, legends, and annotations; it describes what a figure shows, not the plotted values behind it. Supplementary tables go through [OpenGraph Table](/products/opengraph-table/) (preview), which keeps every entity and metric tied to its file, sheet, and cell. Register the servers together and a research agent can move between them, as the [multimodal agents](/use-cases/multimodal-agents/) page shows.
 
-```visual:edges Example output
+```visual:edges
 fig3-retention.png | has_text | "Weeks since enrollment" | 0.90
 fig3-retention.png | has_text | "Control" | 0.87
 supp-table-2.xlsx | contains_metric | dropout_rate

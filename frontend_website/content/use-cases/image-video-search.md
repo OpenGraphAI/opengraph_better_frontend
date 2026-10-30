@@ -7,7 +7,7 @@ Keyword search can find every photo tagged person and every photo tagged umbrell
 
 Tags and captions return any image that mentions both things, in any arrangement. A graph query matches the edge itself, along with scene labels, text read from inside the image, and attributes like color and material. Because relations and attribute keys come from fixed vocabularies, the same question matches the same way across the whole collection.
 
-```visual:edges Example output
+```visual:edges
 @ office-02.jpg
 laptop | on_top_of | desk | 0.94
 office-02.jpg | in_scene | indoor_commercial | 0.96
@@ -20,7 +20,7 @@ mug | has_attribute | material: ceramic | 0.84
 
 Build a graph of the folder and register the MCP server, and any MCP-compatible agent can search it. Asking for everything extracted from one file calls `get_image_entities`, the quickest way to check why an image matched before you rely on it.
 
-```visual:exchange Example output
+```visual:exchange
 you: Show everything extracted from street-14.jpg.
 -> get_image_entities("street-14.jpg", "./photos")
 agent: A person, an umbrella, a bicycle, and a building in an outdoor scene, the text "EXIT", and how each object relates to the others.
@@ -31,7 +31,7 @@ agent: A person, an umbrella, a bicycle, and a building in an outdoor scene, the
 
 OpenGraph Image reads still images, not video files. Sample one frame per second into a folder and the frame number tells you where to look: numbering starts at 1, so `t00042.jpg` is roughly the 41-second mark. Raise the rate for fast-moving scenes, or lower it to keep builds cheap on long recordings. Native video support, including events that unfold across frames, is not part of the current release.
 
-```visual:terminal From the docs
+```visual:terminal
 $ mkdir frames
 $ ffmpeg -i site-walkthrough.mp4 -vf fps=1 frames/t%05d.jpg
 $ opengraph-image build ./frames
