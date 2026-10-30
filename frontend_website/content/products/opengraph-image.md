@@ -1,6 +1,6 @@
 # OpenGraph Image
 
-Most image search stops at filenames, tags, and captions. OpenGraph Image reads every image in a folder with a vision model and writes what it sees into one `graph.json` that your agent can follow, edge by edge.
+Most image search stops at filenames, tags, and captions. OpenGraph Image reads every image in a folder with a vision model and writes what it sees into one graph.json file that your agent can follow, edge by edge.
 
 ## Beyond captions
 ### What the model sees, kept as a graph.

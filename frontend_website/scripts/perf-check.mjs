@@ -4,11 +4,12 @@
 //   npm run build && node scripts/perf-check.mjs --out=/tmp/before.json
 //   (swap the video, rebuild)
 //   npm run build && node scripts/perf-check.mjs --compare=/tmp/before.json
-//   options: --runs=3  --profile=desktop|phone
+//   options: --runs=3  --profile=desktop|phone  --path=/products/opengraph-image/
 //
 // Each profile loads the built site from `vite preview`, waits without
 // scrolling (the video is fetched on idle), then scrolls the video into view
-// and watches it play. The phone profile uses Lighthouse's mobile settings:
+// and watches it play (pages without the video skip that part, and their
+// video metrics are reported as null). The phone profile uses Lighthouse's mobile settings:
 // slow 4G and a 4x slower CPU. Medians across runs are reported. With
 // --compare, the script exits non-zero when a budget below is exceeded.
 
@@ -60,7 +61,9 @@ function parseArgs(argv) {
   }
   const runs = Number(args.runs ?? 3);
   if (!Number.isInteger(runs) || runs < 1) throw new Error("--runs must be a positive integer");
-  return { runs, profiles, out: args.out ?? null, compare: args.compare ?? null };
+  const path = args.path ?? "/";
+  if (!path.startsWith("/")) throw new Error("--path must start with /");
+  return { runs, profiles, path, out: args.out ?? null, compare: args.compare ?? null };
 }
 
 // Installed before any page script runs.
@@ -83,28 +86,34 @@ function observe() {
 // Third-party requests (Google Fonts) are left out: their timing varies run to
 // run and no change to this site affects them.
 async function watchNetwork(cdp, origin) {
-  const requests = new Map(); // requestId -> { url, bytes }
-  const entry = (id) => requests.get(id) ?? requests.set(id, { url: "", bytes: 0 }).get(id);
+  // requestId -> { url, encoded, decoded, final }. A finished request counts its
+  // final transfer size. A video still streaming never finishes, so it counts
+  // what has arrived so far: encoded chunk sizes when Chrome reports them,
+  // otherwise decoded sizes (video is not compressed in transit, so they match).
+  const requests = new Map();
+  const entry = (id) => requests.get(id) ?? requests.set(id, { url: "", encoded: 0, decoded: 0, final: null }).get(id);
   await cdp.send("Network.enable");
   cdp.on("Network.responseReceived", (e) => { entry(e.requestId).url = e.response.url; });
-  // Streamed video never "finishes" while playing, so count bytes as they arrive
-  // and take the larger of that and the final encoded size.
-  cdp.on("Network.dataReceived", (e) => { entry(e.requestId).bytes += e.encodedDataLength || e.dataLength; });
-  cdp.on("Network.loadingFinished", (e) => {
+  cdp.on("Network.dataReceived", (e) => {
     const request = entry(e.requestId);
-    request.bytes = Math.max(request.bytes, e.encodedDataLength);
+    request.encoded += e.encodedDataLength;
+    request.decoded += e.dataLength;
   });
-  const sum = (filter) => [...requests.values()].filter(filter).reduce((total, r) => total + r.bytes, 0);
+  cdp.on("Network.loadingFinished", (e) => { entry(e.requestId).final = e.encodedDataLength; });
+  const bytesOf = (r) => r.final ?? (r.encoded || r.decoded);
+  const sum = (filter) => [...requests.values()].filter(filter).reduce((total, r) => total + bytesOf(r), 0);
   return {
     page: () => sum((r) => r.url.startsWith(origin) && !r.url.includes("/video/")),
     video: () => sum((r) => r.url.includes("/video/")),
   };
 }
 
+const NO_VIDEO = { videoStart: null, droppedRatio: null, frameP95: null, videoSrc: null };
+
 async function measurePlayback(page) {
+  if (!(await page.locator("[data-graph-video]").count())) return NO_VIDEO;
   return page.evaluate(async ({ playbackMs, timeoutMs }) => {
     const video = document.querySelector("[data-graph-video]");
-    if (!video) throw new Error("No [data-graph-video] element on the page");
     const started = performance.now();
     video.scrollIntoView({ block: "center" });
     await new Promise((resolve, reject) => {
@@ -177,6 +186,7 @@ async function runOnce(browser, url, profile) {
 }
 
 function median(values) {
+  if (values.some((value) => value === null)) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
@@ -200,6 +210,7 @@ function compare(before, after) {
     if (!then) continue;
     console.log(`\n${profile}`);
     for (const [key, budget] of Object.entries(BUDGETS)) {
+      if (then[key] === null || now[key] === null) continue;
       const limit = then[key] * budget.ratio + budget.slack;
       const ok = now[key] <= limit;
       if (!ok) failures.push(`${profile}: ${budget.label} ${format(now[key])} > limit ${format(limit)}`);
@@ -212,7 +223,7 @@ function compare(before, after) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const server = await preview({ preview: { port: 4317, strictPort: false }, logLevel: "error" });
-  const url = server.resolvedUrls.local[0];
+  const url = new URL(opts.path, server.resolvedUrls.local[0]).href;
   const browser = await chromium.launch();
   const results = {};
   try {
