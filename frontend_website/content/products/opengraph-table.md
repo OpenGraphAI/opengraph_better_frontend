@@ -41,12 +41,12 @@ $ opengraph-table ingest ./tables-october \
 ## For your agent
 ### Five MCP tools, one for pasted tables.
 
-Build, query, and list sources from Claude or any MCP client. When someone drops a CSV into a conversation, `build_graph_from_content` builds a graph from it without saving a file first.
+Build, query, and list sources from Claude or any MCP client. When someone drops a CSV into a conversation, `build_graph_from_content` builds a graph from it without first saving the CSV to a folder.
 
 ```visual:exchange Example output
 you: Here is our Q3 cost export. Which supplier costs the most?
--> build_graph_from_content([q3-costs.csv])
--> query_graph("Which supplier costs the most?")
+-> build_graph_from_content([q3-costs.csv], "./q3/graph.json")
+-> query_graph("Which supplier costs the most?", "./q3/graph.json")
 agent: Acme Robotics, from the total_cost column of q3-costs.csv.
 ```
 

@@ -105,11 +105,11 @@
   text-transform: uppercase;
 }
 
+/* Sits on the tag's line, with the tag's width kept clear, so a long caption
+   wraps beside the tag instead of running under it. */
 .row-caption {
-  position: absolute;
-  top: 16px;
-  left: clamp(16px, 2.4vw, 24px);
-  margin: 0;
+  max-width: calc(100% - 136px);
+  margin: -30px 0 14px;
   color: rgb(var(--paper-ink-rgb) / 0.55);
   font-family: var(--mono);
   font-size: 11.5px;

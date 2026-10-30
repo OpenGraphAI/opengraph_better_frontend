@@ -235,3 +235,36 @@ test("every product has a docs overview registered for the static build, the doc
     assert.ok(summary.includes(`(${source})`), `SUMMARY.md does not list ${source}`);
   }
 });
+
+// Top-level arguments of a call such as `query_graph("a, b", "./x")`.
+const callArguments = (call) => {
+  const inner = call.slice(call.indexOf("(") + 1, call.lastIndexOf(")"));
+  let depth = 0;
+  let quoted = false;
+  let count = inner.trim() ? 1 : 0;
+  for (const char of inner) {
+    if (char === '"') quoted = !quoted;
+    else if (!quoted && "([".includes(char)) depth += 1;
+    else if (!quoted && ")]".includes(char)) depth -= 1;
+    else if (!quoted && depth === 0 && char === ",") count += 1;
+  }
+  return count;
+};
+
+test("agent exchanges pass a graph path to every graph query", () => {
+  for (const page of contentPages) {
+    const markdown = readFileSync(resolve(root, "content", page.source), "utf8");
+    const calls = renderRows(markdown).rows
+      .flatMap((row) => [...(row.visualHtml ?? "").matchAll(/<li class="is-call"><code>([\s\S]*?)<\/code>/g)])
+      .map((match) => match[1].replace(/&quot;/g, '"').replace(/^[\w-]+:\s*/, ""));
+    for (const call of calls.filter((text) => /^(query_graph|get_\w+_entities)\(/.test(text))) {
+      assert.ok(callArguments(call) >= 2, `${page.path}: "${call}" names no graph, so the server would look in ./opengraph-out`);
+    }
+  }
+});
+
+test("the Image docs overview says a build also writes graph.html", () => {
+  const overview = readFileSync(resolve(root, "docs/content/opengraph-image/README.md"), "utf8");
+  const lifecycle = overview.slice(overview.indexOf("## Build lifecycle"), overview.indexOf("## A relationship-aware query"));
+  assert.match(lifecycle, /graph\.html/);
+});

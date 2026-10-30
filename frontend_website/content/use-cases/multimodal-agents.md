@@ -5,14 +5,13 @@ Real questions rarely stay inside one format. Which sites reported damage, what 
 ## How it works today
 ### One MCP server per format, side by side.
 
-Each package builds a graph for one modality and runs as its own MCP server. OpenGraph Image reads photos, screenshots, and sampled video frames; OpenGraph Text reads `.txt`, `.md`, and PDF documents; OpenGraph Table reads CSV, TSV, Excel, and table images. Install the ones you need and register them together.
+Each package builds a graph for one modality and runs as its own MCP server, and every answer comes back with evidence a person can open:
 
-```visual:edges From the docs
-@ The evidence each server returns
-OpenGraph Image | cites | image filenames
-OpenGraph Text | cites | document paths and claims
-OpenGraph Table | cites | file, sheet, and cell
-```
+- **OpenGraph Image** reads photos, screenshots, and sampled video frames, and returns image filenames.
+- **OpenGraph Text** reads `.txt`, `.md`, and PDF documents, and returns document paths and claims.
+- **OpenGraph Table** (preview) reads CSV, TSV, Excel, and table images, and returns the file, sheet, and cell.
+
+Install the ones you need and register them together.
 
 ## A worked example
 ### Three graphs, one answer with a source for every statement.
@@ -21,9 +20,9 @@ The agent queries the table graph for sites marked damaged, the text graph for t
 
 ```visual:exchange Example output
 you: Which sites in site-reports.xlsx were marked damaged, what does the manual say to do, and do the photos in ./site-photos show the damage?
--> opengraph-table: query_graph("Which sites are marked damaged?")
--> opengraph-text: query_graph("What is the procedure for this damage?")
--> opengraph-image: get_image_entities("site-14-roof.jpg")
+-> opengraph-table: query_graph("Which sites are marked damaged?", "./reports")
+-> opengraph-text: query_graph("What is the procedure for this damage?", "./manuals")
+-> opengraph-image: get_image_entities("site-14-roof.jpg", "./site-photos")
 agent: Two sites are marked damaged. The manual's procedure applies to both, and the photos support one of them; each statement cites its file.
 ```
 

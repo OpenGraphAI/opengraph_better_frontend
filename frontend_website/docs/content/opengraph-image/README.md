@@ -43,7 +43,8 @@ folder
   └─ image-03.webp
           ↓ build
 opengraph-out/
-  └─ graph.json
+  ├─ graph.json    nodes, edges, and source images
+  └─ graph.html    interactive view of the same graph
           ↓ query
 entities + relationships + grounded answer
 ```

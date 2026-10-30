@@ -5,7 +5,7 @@ Most image search stops at filenames, tags, and captions. OpenGraph Image reads 
 ## Beyond captions
 ### What the model sees, kept as a graph.
 
-Objects in the frame, the scene, colors and materials, text that appears in the picture, and how the objects relate. Each node and edge carries a confidence score between 0 and 1, so your agent follows edges instead of guessing which caption fits.
+Objects in the frame, the scene, colors and materials, text that appears in the picture, and how the objects relate. Objects, scenes, attributes, text spans, and every edge carry a confidence score between 0 and 1, so your agent follows edges instead of guessing which caption fits.
 
 ```visual:edges Example output
 @ park-11.jpg
