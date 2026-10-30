@@ -66,7 +66,7 @@ The graph follows the extracted `holding` relationship and returns the source im
 
 ## Current scope
 
-The public v1 package is focused on images. The wider OpenGraph AI project is building toward a shared semantic graph layer for tables, text, audio, and video, but documentation in this section describes the image package that is available now.
+This section describes the image package. Documents and tables have their own packages, with overviews under [OpenGraph Text](../opengraph-text/README.md) and [OpenGraph Table](../opengraph-table/README.md). The wider project is building toward a shared graph layer that also covers audio and video.
 
 ## Continue building
 

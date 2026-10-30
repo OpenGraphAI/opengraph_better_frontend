@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { contentPages, sitePaths } from "../src/site-metadata.js";
+import { contentPages, docsPages, sitePaths } from "../src/site-metadata.js";
 import { renderContentPage } from "./content-pages.mjs";
 import { renderRows, renderRowsHtml, renderVisual } from "./page-rows.mjs";
 
@@ -218,5 +218,20 @@ test("content pages render rows, not the old table-of-contents article", () => {
     const html = renderPage(page);
     assert.match(html, /<div class="page-rows-wrap">/, page.path);
     assert.doesNotMatch(html, /class="page-toc/, page.path);
+  }
+});
+
+test("every product has a docs overview registered for the static build, the docs app and the docs sidebar", () => {
+  const docsApp = readFileSync(resolve(root, "src/docs.js"), "utf8");
+  const summary = readFileSync(resolve(root, "docs/content/SUMMARY.md"), "utf8");
+  for (const product of ["opengraph-image", "opengraph-text", "opengraph-table"]) {
+    const source = `${product}/README.md`;
+    const doc = docsPages.find((page) => page.source === source);
+    assert.ok(doc, `docsPages has no entry for ${source}`);
+    assert.equal(doc.path, `/docs/${product}/overview/`);
+    assert.ok(existsSync(resolve(root, "docs/content", source)), `${source} is missing`);
+    assert.match(docsApp, new RegExp(`"\\.\\./docs/content/${source}\\?raw"`), `src/docs.js does not import ${source}`);
+    assert.match(docsApp, new RegExp(`"${source}":`), `src/docs.js does not register ${source}`);
+    assert.ok(summary.includes(`(${source})`), `SUMMARY.md does not list ${source}`);
   }
 });

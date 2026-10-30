@@ -15,6 +15,14 @@
 
 * [Overview](opengraph-image/README.md)
 
+## OpenGraph Text
+
+* [Overview](opengraph-text/README.md)
+
+## OpenGraph Table
+
+* [Overview](opengraph-table/README.md)
+
 ## Reference
 
 * [MCP tools](reference/mcp-tools.md)
