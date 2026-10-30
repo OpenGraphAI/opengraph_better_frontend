@@ -1,7 +1,8 @@
 // Loads every product and use-case page from the built site at phone and
 // desktop widths and fails when content runs past the screen edge (the site
 // clips sideways overflow, so it would be cut off, not scrollable), a page has
-// no feature rows, or the console reports an error.
+// no feature rows, the footer's pixel field does not sit behind the whole
+// footer with every footer link clickable above it, or the console reports an error.
 //
 //   npm run build && node scripts/check-pages.mjs
 //   options: --base=http://localhost:4317 (skip starting vite preview)
@@ -45,12 +46,29 @@ async function checkPage(browser, base, path, viewport) {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
         wide,
         rows: document.querySelectorAll(".page-row").length,
+        footer: (() => {
+          const footer = document.querySelector(".site-footer");
+          const field = document.querySelector(".footer-pixels");
+          if (!footer || !field) return "missing";
+          const f = footer.getBoundingClientRect();
+          const c = field.getBoundingClientRect();
+          if (Math.abs(f.top - c.top) > 1 || Math.abs(f.height - c.height) > 1 || Math.abs(f.width - c.width) > 1) return "pixel field does not cover the footer";
+          const blocked = [...footer.querySelectorAll("a")].filter((link) => {
+            link.scrollIntoView({ block: "center" });
+            const r = link.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return !link.contains(hit);
+          });
+          window.scrollTo(0, 0);
+          return blocked.length ? `${blocked.length} footer link(s) not clickable` : "";
+        })(),
       };
     });
     const problems = [];
     if (found.overflow > 0) problems.push(`scrolls sideways by ${found.overflow}px`);
     if (found.wide.length) problems.push(`runs past the screen edge: ${found.wide.join(", ")}`);
     if (!found.rows) problems.push("no feature rows");
+    if (found.footer) problems.push(`footer: ${found.footer}`);
     problems.push(...errors.map((error) => `console error: ${error}`));
     return problems;
   } finally {
