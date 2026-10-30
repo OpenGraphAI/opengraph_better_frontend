@@ -200,10 +200,10 @@ export function renderRowsHtml({ intro, rows }) {
         <div class="page-row-copy">
           ${label}
           <h2 id="${row.id}-title">${markdown.parseInline(row.heading)}</h2>
-          ${row.bodyHtml}
+          <div class="page-row-body page-prose">${row.bodyHtml}</div>
         </div>
         ${row.visualHtml ?? ""}
       </section>`;
   });
-  return `${intro ? `<div class="page-intro">${intro}</div>\n      ` : ""}${html.join("\n      ")}`;
+  return `${intro ? `<div class="page-intro page-prose">${intro}</div>\n      ` : ""}${html.join("\n      ")}`;
 }
