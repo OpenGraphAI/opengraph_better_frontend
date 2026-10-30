@@ -205,7 +205,7 @@ test("h1 and title unchanged", () => {
   }
 });
 
-test("page intros are plain text, so a font swap above the fold cannot shift inline boxes", { todo: "Text, Table and use-case intros are rewritten in Tasks 5 and 6" }, () => {
+test("page intros are plain text, so a font swap above the fold cannot shift inline boxes", () => {
   for (const page of contentPages) {
     const markdown = readFileSync(resolve(root, "content", page.source), "utf8").replace(/^#\s+.+\n/, "");
     const { intro } = renderRows(markdown);

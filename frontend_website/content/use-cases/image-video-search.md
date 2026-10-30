@@ -1,61 +1,59 @@
 # Search images by relationship
 
-Keyword search can find every photo tagged "person" and every photo tagged "umbrella". It cannot tell you which ones show a person *holding* the umbrella, rather than a person standing near a closed umbrella in a stand. Captions help only when someone happened to write the exact phrase you search for.
-
-OpenGraph Image records the relationship itself. Each image becomes a graph of objects, attributes, scene, visible text, and the spatial relations between objects, so a query can match on structure instead of wording.
+Keyword search can find every photo tagged person and every photo tagged umbrella. It cannot tell you which ones show a person holding the umbrella, rather than standing near a closed one in a stand. OpenGraph Image records the relationship itself, so a query matches on structure instead of wording.
 
 ## From tags to relationships
+### Match the arrangement, not the words.
 
-| You want | Tags or captions return | A graph query matches |
-| --- | --- | --- |
-| A person holding an umbrella | Any image tagged with both, in any arrangement | A `holding` edge from the person to the umbrella |
-| A laptop on a desk, indoors | Images that mention laptops or desks | An `on_top_of` edge plus an indoor scene label |
-| Signs that read "EXIT" | Only images whose captions include the word | Text spans read from inside the image |
-| A red ceramic mug | Depends on what the tagger chose to record | A mug with `color: red` and `material: ceramic` attributes |
+Tags and captions return any image that mentions both things, in any arrangement. A graph query matches the edge itself, along with scene labels, text read from inside the image, and attributes like color and material. Because relations and attribute keys come from fixed vocabularies, the same question matches the same way across the whole collection.
 
-Because relations and attribute keys come from fixed vocabularies, the same question matches the same way across the whole collection.
+```visual:edges Example output
+@ office-02.jpg
+laptop | on_top_of | desk | 0.94
+office-02.jpg | in_scene | indoor_commercial | 0.96
+mug | has_attribute | color: red | 0.89
+mug | has_attribute | material: ceramic | 0.84
+```
 
 ## Search from your agent
+### Build once, then ask in plain language.
 
-Build a graph once, then let any MCP-compatible agent search it:
+Build a graph of the folder and register the MCP server, and any MCP-compatible agent can search it. Asking for everything extracted from one file calls `get_image_entities`, the quickest way to check why an image matched before you rely on it.
 
-```bash
-pip install opengraph-image
-opengraph-image build ./photos
-claude mcp add opengraph-image -- opengraph-image-mcp
+```visual:exchange Example output
+you: Show everything extracted from street-14.jpg.
+-> get_image_entities("street-14.jpg", "./photos")
+agent: A person, an umbrella, a bicycle, and a building in an outdoor scene, the text "EXIT", and how each object relates to the others.
 ```
 
-Prompts that work well:
+## Video
+### Sample frames today, then search them.
 
-- "Which images in ./photos show a person holding an umbrella?"
-- "List the photos with a bicycle in front of a building."
-- "Show everything extracted from `street-14.jpg`."
+OpenGraph Image reads still images, not video files. Sample one frame per second into a folder and the frame number tells you where to look: numbering starts at 1, so `t00042.jpg` is roughly the 41-second mark. Raise the rate for fast-moving scenes, or lower it to keep builds cheap on long recordings. Native video support, including events that unfold across frames, is not part of the current release.
 
-The last prompt calls `get_image_entities`, which is the quickest way to check why an image matched before you rely on it.
-
-## Video: sample frames today
-
-OpenGraph Image reads still images, not video files. To search footage, sample frames into a folder and build a graph from them. With one frame per second, the frame number tells you roughly where in the clip to look:
-
-```bash
-mkdir frames
-ffmpeg -i site-walkthrough.mp4 -vf fps=1 frames/t%05d.jpg
-opengraph-image build ./frames
+```visual:terminal From the docs
+$ mkdir frames
+$ ffmpeg -i site-walkthrough.mp4 -vf fps=1 frames/t%05d.jpg
+$ opengraph-image build ./frames
 ```
-
-Numbering starts at 1, so a match on `t00042.jpg` points to roughly the 41-second mark. Raise the frame rate for fast-moving scenes, or lower it to keep builds cheap on long recordings.
-
-Native video support, including events that unfold across frames, is not part of the current release.
 
 ## Good fits
+### Where the arrangement is the question.
 
 - Product and catalog photography, where buyers ask for arrangements ("a sofa next to a floor lamp")
 - Field inspection and site photos, where the question is what sits on, inside, or behind what
 - Recorded demos and walkthroughs, sampled into frames and searched by what appears on screen
 
-## Limits worth knowing
+## Good to know
+
+> **Images are sent to a hosted model during the build.** Do not process footage you are not permitted to share with your model provider.
 
 - **Each image is a model call.** Build cost and time scale with the size of the collection, so sample video frames sparingly.
-- **Images are sent to a hosted model** during the build. Do not process footage you are not permitted to share with your model provider.
 - **Fixed vocabularies cut both ways.** Matching is consistent, but a relation outside the set, such as "leaning against", is not recorded.
-- **No identity across frames.** Objects merge by label, so the graph knows a car appears in 40 frames, not whether it is the same car.
+- **No identity across frames.** The graph knows a car appears in 40 frames, not whether it is the same car.
+
+## Go deeper
+- [Quickstart](/docs/getting-started/quickstart/) — Install, build, and query the sample images
+- [OpenGraph Image overview](/docs/opengraph-image/overview/) — Node types, relationships, and limits
+- [MCP tools](/docs/reference/mcp-tools/) — Every tool's inputs and outputs
+- [CLI](/docs/reference/cli/) — Build, summary, and query commands

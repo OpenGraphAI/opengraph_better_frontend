@@ -1,53 +1,59 @@
 # Map a research corpus
 
-A literature review lives in many places at once: PDFs of papers, figures exported as images, and supplementary tables in spreadsheets. The structure that matters, such as who reported what, which groups work together, and where two papers disagree, is spread across all of them. Reading it back out means rereading everything.
+A literature review lives in many places at once: PDFs of papers, figures exported as images, and supplementary tables in spreadsheets. OpenGraph builds the structure that matters once, such as who reported what, which groups work together, and where two papers disagree, and keeps every node pointing back to the file it came from.
 
-OpenGraph builds that structure once and keeps it attached to the sources. Papers become entities, topics, and claims. Data tables become entities and metrics tied to their cells. Figures become objects and the text visible in them. Every node points back to the file it came from.
+## Papers
+### Entities, topics, and claims from every paper.
 
-## Papers: entities, topics, and claims
+Run [OpenGraph Text](/products/opengraph-text/) over a folder of papers and notes. People, organizations, places, products, concepts, and events merge across papers, so a lab or author appears once with every paper that mentions it; topics merge across the corpus. Claims stay short and literal, each linked to the paper that makes it, and are never merged: when two papers report different results, both stay in the graph with their sources.
 
-Run [OpenGraph Text](/products/opengraph-text/) over a folder of papers and notes:
-
-```bash
-pip install opengraph-text
-opengraph-text build ./papers
+```visual:edges Example output
+smith-2024.pdf | states | "Dropout held at 14% across both arms."
+patel-2023.pdf | states | "Weekly reminders halved dropout."
+Ravi Patel | works_at | Robotics Group | 0.86
 ```
 
-Each paper becomes a document node connected to:
+## Ask the corpus
+### Questions that work well.
 
-- **Entities:** people, organizations, places, products, concepts, and events, merged across papers so a lab or author appears once with every paper that mentions it
-- **Topics:** the themes each paper covers, also merged across the corpus
-- **Claims:** short literal statements, each linked to the paper that makes it
+Ask which papers make claims about sample size, which organizations collaborate and in which papers, or for every claim on a topic with the paper each comes from.
 
-Claims are the most useful handle for findings. They are never merged, so when two papers report different results, both statements stay in the graph with their sources.
-
-Questions that work well:
-
-- "Which papers make claims about sample size?"
-- "Which organizations collaborate with each other, and in which papers?"
-- "List every claim about dropout rates, with the paper each comes from."
+```visual:exchange Example output
+you: List every claim about dropout rates, with the paper each comes from.
+-> query_graph(question, "./papers")
+agent: Three claims, from smith-2024.pdf, patel-2023.pdf, and lee-2025.pdf, quoted with their sources.
+```
 
 ## Figures and supplementary data
+### Figures and tables, through their own graphs.
 
-- **Figures** go through [OpenGraph Image](/products/opengraph-image/), which records visible objects and the text inside the image, such as axis labels, legends, and annotations. It describes what a figure shows, not the plotted values behind it.
-- **Supplementary tables** go through [OpenGraph Table](/products/opengraph-table/) (preview), which keeps every entity and metric tied to its file, sheet, and cell, so a value in an answer can be checked against the original spreadsheet.
+Figures go through [OpenGraph Image](/products/opengraph-image/), which records visible objects and the text inside the image, such as axis labels, legends, and annotations; it describes what a figure shows, not the plotted values behind it. Supplementary tables go through [OpenGraph Table](/products/opengraph-table/) (preview), which keeps every entity and metric tied to its file, sheet, and cell. Register the servers together and a research agent can move between them, as the [multimodal agents](/use-cases/multimodal-agents/) page shows.
 
-Register the servers together and a research agent can move between them. The [multimodal agents](/use-cases/multimodal-agents/) page shows how.
+```visual:edges Example output
+fig3-retention.png | has_text | "Weeks since enrollment" | 0.90
+fig3-retention.png | has_text | "Control" | 0.87
+supp-table-2.xlsx | contains_metric | dropout_rate
+```
 
 ## Provenance by default
+### Every answer traces back to its source in one step.
 
-Every claim links to a document, every table value to a sheet and cell, and every visual entity to an image. A reviewer can trace any answer back to its source in one step instead of trusting a summary.
+Every claim links to a document, every table value to a sheet and cell, and every visual entity to an image. A reviewer can trace any answer back to its source instead of trusting a summary.
 
-## Before you process sensitive data
+## Good to know
 
-Building a graph sends source content to the configured model provider, currently the Anthropic API. The resulting graph files are written locally.
+> **Before you process sensitive data.** Building a graph sends source content to the configured model provider, currently the Anthropic API; the graph files are written locally. Before you process unpublished results, participant data, or anything governed by an ethics approval, a data-use agreement, or privacy law, confirm that sending it to a hosted model is allowed.
 
-Before you process unpublished results, participant data, or anything governed by an ethics approval, a data-use agreement, or privacy law, confirm that sending it to a hosted model is allowed. OpenGraph is a research tool. It is not validated for clinical or diagnostic use.
-
-## Current limits
+> **Not for clinical use.** OpenGraph is a research tool. It is not validated for clinical or diagnostic use.
 
 - **The relation set is general-purpose.** `collaborates_with`, `part_of`, and `mentions` exist; research-specific links such as `cites`, `replicates`, or `contradicts` do not yet. Use claims for findings.
 - **PDFs need a text layer.** Scanned papers without embedded text need OCR first.
 - **Separate graphs per format.** Papers, figures, and tables live in separate graphs, and the agent connects them at query time.
 
 Working on a research corpus and want to try this with us? [Get in touch](/#about).
+
+## Go deeper
+- [OpenGraph Text overview](/docs/opengraph-text/overview/) — Node types, relations, tools, install, and limits
+- [OpenGraph Table overview](/docs/opengraph-table/overview/) — Parts, merging, tools, install from source, and limits
+- [Context graphs](/docs/concepts/context-graphs/) — Entities, relationships, and evidence paths
+- [Connect Claude with MCP](/docs/getting-started/claude-mcp/) — Add the servers to Claude Code or Claude Desktop
