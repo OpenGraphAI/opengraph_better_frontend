@@ -14,3 +14,6 @@ renders/
 !frontend_website/public/video/graph-loop-1440.mp4
 claude-desktop-mockup/
 .claude/worktrees/
+
+# Vercel link for deploys run from the repo root
+.vercel/

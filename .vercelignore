@@ -1,0 +1,11 @@
+# The Vercel project builds frontend_website (its Root Directory), but deploys
+# run from the repo root, so upload only that folder. Renders, Blender files and
+# the old upstream copy are hundreds of megabytes the site never uses.
+/*
+!/frontend_website
+/frontend_website/node_modules
+/frontend_website/dist
+/frontend_website/.vercel
+/frontend_website/vercel_deploy.log
+# Local env files (e.g. VERCEL_OIDC_TOKEN from `vercel link`) must never be uploaded.
+/frontend_website/.env*
