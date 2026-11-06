@@ -18,7 +18,9 @@ import { EDGES, LIT_NODES, LIT_STAGES, NODE_ROWS, T, nodeAppearAt, riseStart } f
 import { easeInBack, easeInCubic, easeInOutCubic, easeOutBack, easeOutElastic, hump, lerp, seg } from "./motion.js";
 
 export const PALETTE = {
-  ground: new Color(0xf4f2ed),
+  // Frames are rendered on white and multiplied onto the page's paper, so
+  // anything that fades out fades toward white.
+  ground: new Color(0xffffff),
   ceramic: new Color(0xeeeae2),
   ink: new Color(0x16181c),
   cobalt: new Color(0x2457d6),
@@ -124,7 +126,8 @@ function buildNodes(scene, layout) {
       sphere,
       new MeshStandardMaterial({ color: PALETTE.ceramic, roughness: 0.84, metalness: 0 }),
     );
-    core.castShadow = true;
+    // Nodes float above the paper; their shadows would land behind the files as stray smudges.
+    core.castShadow = false;
     const hull = new Mesh(sphere, new MeshBasicMaterial({ color: PALETTE.ink, side: BackSide }));
     const ring = new Mesh(
       ringGeometry,

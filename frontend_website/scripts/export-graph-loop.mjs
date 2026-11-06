@@ -19,7 +19,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
@@ -176,7 +176,8 @@ async function exportCut(base, key, opts) {
   });
   ffmpeg(["-i", framePath(dir, 0), "-vf", `scale=${cut.poster.width}:-2:flags=lanczos`, "-quality", "88", join(dir, cut.poster.file)]);
   mkdirSync(opts.out, { recursive: true });
-  for (const file of [...files, cut.poster.file]) renameSync(join(dir, file), join(opts.out, file));
+  // Copy, not rename: the frames folder usually lives on another filesystem (/tmp).
+  for (const file of [...files, cut.poster.file]) copyFileSync(join(dir, file), join(opts.out, file));
   return [...files, cut.poster.file];
 }
 

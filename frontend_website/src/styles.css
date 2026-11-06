@@ -795,17 +795,9 @@ body {
   color: var(--ground-ink);
   font-family: var(--sans);
   background-color: var(--ground);
-  background-image:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%),
-    radial-gradient(circle at 12% 78%, rgb(var(--shadow-rgb) / 0.12), transparent 34%);
-}
-
-/* On phones the portrait graph video covers the shadow blob, which would only
-   show as a grey band along the video's faded edges. */
-@media (max-width: 600px) {
-  .compiler-section {
-    background-image: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%);
-  }
+  /* No shadow blob in the lower left: it sat under the graph video and showed
+     as a grey band beside the files. */
+  background-image: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%);
 }
 
 .compiler-header {

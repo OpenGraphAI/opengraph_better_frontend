@@ -6,7 +6,8 @@
     <title>OpenGraph AI — graph loop</title>
     <style>
       :root {
-        --ground: #f4f2ed;
+        /* White: the exported frames are multiplied onto the page's paper. */
+        --ground: #ffffff;
         --ground-ink-rgb: 17 19 23;
       }
       html,
@@ -40,7 +41,7 @@
   </head>
   <body>
     <!-- Preview: /graph-loop.html (add ?portrait for the phone cut). Frame export: /graph-loop.html?capture&ssaa=2 (ssaa renders at N x the frame size, then downsamples) -->
-    <figure class="graph-loop" data-graph-loop data-grid aria-hidden="true"><canvas></canvas></figure>
+    <figure class="graph-loop" data-graph-loop aria-hidden="true"><canvas></canvas></figure>
     <script type="module">
       const params = new URLSearchParams(location.search);
       const figure = document.querySelector("[data-graph-loop]");
