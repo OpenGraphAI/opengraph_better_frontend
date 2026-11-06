@@ -33,7 +33,9 @@ async function start(figure) {
   const resize = () => {
     const { width, height } = figure.getBoundingClientRect();
     if (width < 1 || height < 1) return;
-    const ratio = capture ? 1 : Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+    // Captures can supersample: the canvas renders at N x and the screenshot downsamples it.
+    const ssaa = Number(figure.dataset.ssaa);
+    const ratio = capture ? (ssaa >= 1 ? ssaa : 1) : Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
     loop.resize(Math.round(width), Math.round(height), ratio);
     draw();
   };

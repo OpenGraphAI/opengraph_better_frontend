@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "frontend_website"],
       "port": 5173
+    },
+    {
+      "name": "frontend_website_dev_alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend_website", "--", "--port", "5180", "--strictPort"],
+      "port": 5180
     }
   ]
 }

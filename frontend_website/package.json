@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "node --test scripts/",
     "perf": "node scripts/perf-check.mjs",
-    "encode:graph-loop": "node scripts/encode-graph-loop.mjs"
+    "export:graph-loop": "node scripts/export-graph-loop.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",

@@ -3,6 +3,13 @@ import "./graph-loop.css";
 // Phones get a 4:5 cut of the loop, composed for a narrow screen. Keep this in
 // step with the matching breakpoint in graph-loop.css.
 const PORTRAIT_QUERY = "(max-width: 600px)";
+// The 2880-wide cut goes only to wide figures on high-DPI screens. The width
+// floor keeps a phone turned sideways (a dense screen, but a narrow figure) on
+// the 1440 cut.
+const SHARP_MIN_WIDTH = 960;
+const SHARP_MIN_PIXELS = 1600;
+// Start fetching once the figure is this close to scrolling into view.
+const PRELOAD_MARGIN = "200px 0px";
 
 // The landing page plays the rendered scene without downloading a 3D engine.
 // The loop is muted, ambient, and the page's main illustration, so it plays
@@ -15,7 +22,8 @@ document.querySelectorAll("[data-graph-video]").forEach((video) => {
   let loaded = false;
   let variant = null;
 
-  const variantSrc = () => (variant === "portrait" ? video.dataset.srcPortrait : video.dataset.src);
+  const sources = { portrait: video.dataset.srcPortrait, sharp: video.dataset.srcSharp, wide: video.dataset.src };
+  const variantSrc = () => sources[variant] ?? sources.wide;
 
   const loadVideo = () => {
     if (loaded || !source) return;
@@ -55,8 +63,14 @@ document.querySelectorAll("[data-graph-video]").forEach((video) => {
   }
 
   // Pick the cut for the current screen; rotating a phone swaps it.
+  const pickVariant = () => {
+    if (portrait.matches && sources.portrait) return "portrait";
+    const width = video.getBoundingClientRect().width;
+    const sharp = width >= SHARP_MIN_WIDTH && width * (window.devicePixelRatio || 1) > SHARP_MIN_PIXELS;
+    return sharp && sources.sharp ? "sharp" : "wide";
+  };
   const applyVariant = () => {
-    const next = portrait.matches && video.dataset.srcPortrait ? "portrait" : "wide";
+    const next = pickVariant();
     if (next === variant) return;
     variant = next;
     video.poster = (next === "portrait" ? video.dataset.posterPortrait : video.dataset.poster) ?? "";
@@ -67,12 +81,19 @@ document.querySelectorAll("[data-graph-video]").forEach((video) => {
   };
   applyVariant();
   portrait.addEventListener("change", applyVariant);
+  // A window that grows wide, or moves to a high-DPI screen, upgrades to the
+  // sharp cut. It never steps back down, so resizing cannot thrash the video.
+  new ResizeObserver(() => {
+    if (variant === "wide" && pickVariant() === "sharp") applyVariant();
+  }).observe(video);
 
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(loadVideo, { timeout: 2000 });
-  } else {
-    window.setTimeout(loadVideo, 1200);
-  }
+  // Visitors who never scroll this far never download the video.
+  const preload = new IntersectionObserver(([entry]) => {
+    if (!entry.isIntersecting) return;
+    preload.disconnect();
+    loadVideo();
+  }, { rootMargin: PRELOAD_MARGIN });
+  preload.observe(video);
 
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;

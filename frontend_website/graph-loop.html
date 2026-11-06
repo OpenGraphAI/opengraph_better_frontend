@@ -23,8 +23,8 @@
         width: min(100vw, 1600px);
       }
       .graph-loop[data-capture] {
-        width: 2560px;
-        height: 1080px;
+        width: 2880px;
+        height: 1216px;
         aspect-ratio: auto;
       }
       .graph-loop[data-portrait] {
@@ -39,13 +39,14 @@
     </style>
   </head>
   <body>
-    <!-- Preview: /graph-loop.html (add ?portrait for the phone cut). Frame export: /graph-loop.html?capture -->
+    <!-- Preview: /graph-loop.html (add ?portrait for the phone cut). Frame export: /graph-loop.html?capture&ssaa=2 (ssaa renders at N x the frame size, then downsamples) -->
     <figure class="graph-loop" data-graph-loop data-grid aria-hidden="true"><canvas></canvas></figure>
     <script type="module">
       const params = new URLSearchParams(location.search);
       const figure = document.querySelector("[data-graph-loop]");
       if (params.has("capture")) figure.setAttribute("data-capture", "");
       if (params.has("portrait")) figure.setAttribute("data-portrait", "");
+      if (params.has("ssaa")) figure.dataset.ssaa = params.get("ssaa");
     </script>
     <script type="module" src="/src/graph-loop/mount.js"></script>
   </body>

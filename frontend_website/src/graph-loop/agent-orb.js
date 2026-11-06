@@ -62,10 +62,7 @@ function dotAt(host, d) {
 
 /** Morph start times: one per hand-off between consecutive agents. */
 const morphWindows = () =>
-  AGENTS.slice(1).map((_, i) => {
-    const start = T.agentMorph.first + i * T.agentMorph.every;
-    return { start, end: start + T.agentMorph.duration };
-  });
+  T.agentMorphs.slice(0, AGENTS.length - 1).map((start) => ({ start, end: start + T.morphDuration }));
 
 function buildTimeline(host, state) {
   const timeline = createTimeline({ autoplay: false });

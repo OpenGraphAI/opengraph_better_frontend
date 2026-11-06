@@ -1,4 +1,5 @@
 import {
+  Box3,
   DirectionalLight,
   HemisphereLight,
   Mesh,
@@ -18,46 +19,23 @@ import {
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { createAgentOrb } from "./agent-orb.js";
-import { PALETTE, createGraph } from "./graph.js";
-import { MARK, NODES, T, markGroupOf, returnStart, sourceWindow, sourcesFor } from "./layout.js";
-import {
-  LOOP,
-  TAU,
-  easeInCubic,
-  easeInOutCubic,
-  easeOutBack,
-  easeOutCubic,
-  hump,
-  seg,
-  wave,
-} from "./motion.js";
-import { createParticles } from "./particles.js";
+import { PALETTE, createGraph, haloSprite } from "./graph.js";
+import { LIT_FILES, T, layoutFor } from "./layout.js";
+import { LOOP, TAU, easeInCubic, easeInOutCubic, easeOutBack, easeOutCubic, hump, seg, wave } from "./motion.js";
 import { buildSource } from "./sources.js";
 
 const FOV = 22;
 const HALF_TAN = Math.tan((FOV / 2) * (Math.PI / 180));
-const FRAME_HALF_WIDTH = 7.6;
-// Narrow frames fit the graph, not the sources: they drift in from off-frame.
-const NARROW_ASPECT = 1.8;
-const NARROW_HALF_WIDTH = 4.3;
-const FRAME_HALF_HEIGHT = 3.3;
-// Portrait frames hold the graph plus the agent at its right edge across, and
-// the rows of sources above and below it.
-const PORTRAIT_HALF_WIDTH = 4.55;
-const PORTRAIT_HALF_HEIGHT = 5.4;
+// The world-space box the camera keeps in frame, centred on the mirror line.
+const FRAME = {
+  wide: { halfWidth: 7.4, halfHeight: 3.35, centreY: 0 },
+  portrait: { halfWidth: 4.1, halfHeight: 5.05, centreY: -0.3 },
+};
+const CAMERA_LIFT = 0.16; // camera height per unit of distance: a slight look down at the files
 const REFERENCE_WIDTH = 1400;
-// The ground sits below the lowest source so the bottom row casts shadows on it.
-const GROUND_Y = -3.15;
-const PORTRAIT_GROUND_Y = -5.3;
-
-function cubic(p, u, out) {
-  const v = 1 - u;
-  return out
-    .copy(p[0]).multiplyScalar(v * v * v)
-    .addScaledVector(p[1], 3 * v * v * u)
-    .addScaledVector(p[2], 3 * v * u * u)
-    .addScaledVector(p[3], u * u * u);
-}
+const AGENT_SCALE = 1.25;
+const AGENT_DROP = 1.8;
+const FILE_LIFT = 0.3;
 
 function createMaterials() {
   return {
@@ -66,132 +44,114 @@ function createMaterials() {
     ink: new MeshBasicMaterial({ color: PALETTE.ink }),
     inkSoft: new MeshBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.5 }),
     cobalt: new MeshBasicMaterial({ color: PALETTE.cobalt, toneMapped: false }),
-    edge: new LineMaterial({ color: 0x121418, linewidth: 1.1 }),
+    edge: new LineMaterial({ color: PALETTE.ink, linewidth: 1.1 }),
   };
 }
 
-function createSources(scene, mats, sourceList) {
-  return sourceList.map((source, i) => {
-    const object = buildSource(source.kind, mats);
+/** Mirror partners share their idle phase, so the row always moves symmetrically. */
+const idlePhase = (x) => Math.abs(x) * 0.9;
+
+function createFiles(scene, mats, layout) {
+  return layout.files.map((file) => {
+    // Each file gets its own outline so a lit file can turn blue on its own.
+    const edge = mats.edge.clone();
+    const object = buildSource(file.kind, { ...mats, edge });
     scene.add(object);
-    const home = new Vector3(...source.home);
-    const node = NODES.find((n) => n.id === source.node);
-    const nodePos = new Vector3(...node.pos);
-    // Sources sharing a mark vertex leave from spread-out points around it.
-    const markPos = new Vector3(...MARK[markGroupOf(node)].pos).lerp(nodePos, 0.4);
-    const side = Math.sign(home.x);
-    const vertical = Math.sign(home.y) || 1;
-    return {
-      object,
-      home,
-      side,
-      phase: i * 1.3,
-      window: sourceWindow(i),
-      returnAt: returnStart(i),
-      outPath: [
-        home,
-        home.clone().add(new Vector3(-side * 1.9, -0.35 * vertical, 1.2)),
-        nodePos.clone().add(new Vector3(side * 1.5, 0.7 * vertical, 0.6)),
-        nodePos,
-      ],
-      backPath: [
-        markPos,
-        markPos.clone().add(new Vector3(side * 1.6, -0.9 * vertical, 1.2)),
-        home.clone().add(new Vector3(-side * 1.7, -0.4 * vertical, 0.9)),
-        home,
-      ],
-      at: new Vector3(),
-    };
+    const home = new Vector3(...file.pos);
+    object.position.copy(home);
+    const halfHeight = new Box3().setFromObject(object).getSize(new Vector3()).y / 2;
+    const lit = LIT_FILES.includes(file.kind);
+    const glow = lit ? haloSprite(0) : null;
+    if (glow) scene.add(glow);
+    return { ...file, object, edge, home, halfHeight, lit, glow, phase: idlePhase(home.x) };
   });
 }
 
-function updateSources(sources, t) {
-  for (const s of sources) {
-    const { depart, arrive } = s.window;
-    let scale;
-    let spin;
-    if (t < s.returnAt) {
-      const travel = easeInOutCubic(seg(t, depart, arrive));
-      cubic(s.outPath, travel, s.at);
-      scale = 1 - easeInCubic(seg(travel, 0.45, 1));
-      spin = travel;
-    } else {
-      const back = easeInOutCubic(seg(t, s.returnAt, T.sourceReturnEnd));
-      cubic(s.backPath, back, s.at);
-      scale = easeOutBack(seg(back, 0.15, 0.85), 1.1);
-      spin = 1 - back;
+const BEHIND = new Vector3(0, 0, -0.15);
+
+function updateFiles(files, t, lineScale) {
+  const lift = easeOutBack(seg(t, ...T.fileLift), 1.3) * (1 - easeInOutCubic(seg(t, ...T.unlight)));
+  const anchors = {};
+  for (const f of files) {
+    const { object } = f;
+    const raised = f.lit ? lift : 0;
+    object.position.copy(f.home);
+    object.position.y += 0.045 * wave(t, 2, f.phase) + FILE_LIFT * raised;
+    object.rotation.set(-0.12 + 0.025 * wave(t, 1, f.phase), -f.home.x * 0.025, 0);
+    f.edge.color.copy(PALETTE.ink).lerp(PALETTE.cobalt, Math.min(1, raised));
+    f.edge.linewidth = (1.1 + 1.3 * raised) * lineScale;
+    if (f.glow) {
+      f.glow.visible = raised > 0.002;
+      f.glow.position.copy(object.position).add(BEHIND);
+      f.glow.scale.setScalar(2.7 * (0.85 + 0.15 * raised));
+      f.glow.material.opacity = 0.3 * Math.min(1, raised);
     }
-    const { object } = s;
-    object.visible = scale > 0.002;
-    object.position.copy(s.at);
-    object.position.y += 0.07 * wave(t, 2, s.phase);
-    object.scale.setScalar(Math.max(scale, 1e-4));
-    object.rotation.set(
-      -0.2 + 0.06 * wave(t, 1, s.phase),
-      -s.home.x * 0.07 - s.side * spin * 0.8,
-      0.03 * wave(t, 1, s.phase + 2),
-    );
     for (const [j, bar] of (object.userData.bars ?? []).entries()) {
-      bar.scale.y = bar.userData.base * (0.78 + 0.22 * wave(t, 6, j * 0.9));
+      bar.scale.y = bar.userData.base * (0.78 + 0.22 * wave(t, 6, Math.abs(j - 7) * 0.9));
     }
+    anchors[f.node] = object.position.clone().setY(object.position.y + f.halfHeight - 0.02);
   }
+  return anchors;
 }
 
-// The agent flies the same path as before; agent-orb.js owns its look.
-const AGENT_ENTER_PATH = [new Vector3(9.4, 1.3, 0.9), new Vector3(7.2, 1.7, 1.4), new Vector3(5.2, 0.4, 0.8), new Vector3(4.25, 0.3, 0.6)];
-const AGENT_EXIT_PATH = [new Vector3(4.25, 0.3, 0.6), new Vector3(5.4, 0.2, 0.9), new Vector3(7.4, -0.5, 0.6), new Vector3(9.6, -0.7, 0.3)];
-// The portrait frame is narrower, so the agent parks just above the entry node instead.
-const PORTRAIT_AGENT_SHIFT = new Vector3(-0.65, 0.75, 0);
+function createAgent(scene, layout) {
+  const agent = createAgentOrb(scene);
+  const halo = haloSprite(0);
+  scene.add(halo);
+  return { ...agent, halo, home: new Vector3(...layout.agent) };
+}
 
-const agentPaths = (portrait) => {
-  const shift = (path) => path.map((point) => point.clone().add(PORTRAIT_AGENT_SHIFT));
-  return portrait
-    ? { enter: shift(AGENT_ENTER_PATH), exit: shift(AGENT_EXIT_PATH) }
-    : { enter: AGENT_ENTER_PATH, exit: AGENT_EXIT_PATH };
-};
-
-function updateAgent(agent, t, paths) {
+function updateAgent(agent, t, camera) {
   const enter = seg(t, ...T.agentEnter);
   const exit = seg(t, ...T.agentExit);
-  const { group } = agent;
+  const { group, halo } = agent;
   group.visible = enter > 0 && exit < 1;
-  if (!group.visible) return;
-  if (exit > 0) cubic(paths.exit, easeInCubic(exit), group.position);
-  else cubic(paths.enter, easeOutCubic(enter), group.position);
-  group.position.x += 0.1 * hump(seg(t, 6.1, 6.55));
-  group.position.y += 0.035 * wave(t, 3, 0.5);
-  const scale = easeOutBack(seg(t, T.agentEnter[0], T.agentEnter[0] + 0.6)) * (1 - easeInCubic(exit) * 0.6);
+  halo.visible = group.visible;
+  if (!group.visible) {
+    agent.update(t, camera);
+    return;
+  }
+  group.position.copy(agent.home);
+  group.position.y += AGENT_DROP * (1 - easeOutCubic(enter)) + AGENT_DROP * easeInCubic(exit);
+  group.position.y += 0.04 * wave(t, 3, 0.5);
+  // It swells as the answer arrives, then settles.
+  const receive = hump(seg(t, ...T.receive));
+  const grow = easeOutBack(seg(t, T.agentEnter[0], T.agentEnter[1] - 0.15));
+  const scale = AGENT_SCALE * grow * (1 - easeInCubic(exit)) * (1 + 0.16 * receive);
   group.scale.setScalar(Math.max(scale, 1e-4));
+  halo.position.copy(group.position).add(BEHIND);
+  halo.scale.setScalar(1.4 + 1.6 * receive);
+  halo.material.opacity = 0.42 * receive;
+  agent.update(t, camera);
 }
 
 function createStage(scene, groundY) {
   scene.add(new HemisphereLight(0xfffaf1, 0xd9d2c4, 0.85));
+  // Key light straight above and in front, so shadows fall symmetrically.
   const key = new DirectionalLight(0xffffff, 1.7);
-  key.position.set(-4, 9, 6);
+  key.position.set(0, 9, 6);
   key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.mapSize.set(2048, 2048);
   Object.assign(key.shadow.camera, { left: -10, right: 10, top: 8, bottom: -8, near: 1, far: 30 });
   key.shadow.radius = 18;
   key.shadow.blurSamples = 24;
   key.shadow.bias = -0.0008;
   scene.add(key);
   const fill = new DirectionalLight(0xfff8ee, 0.75);
-  fill.position.set(1.5, 2.5, 12);
+  fill.position.set(0, 2.5, 12);
   scene.add(fill);
-  const ground = new Mesh(new PlaneGeometry(60, 60), new ShadowMaterial({ color: 0x3c3428, opacity: 0.06 }));
+  const ground = new Mesh(new PlaneGeometry(60, 60), new ShadowMaterial({ color: 0x3c3428, opacity: 0.07 }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = groundY;
   ground.receiveShadow = true;
   scene.add(ground);
 }
 
-function placeCamera(camera, t, baseDistance) {
-  const dolly = 1 - 0.055 * (1 - Math.cos((TAU * t) / LOOP)) * 0.5;
-  const distance = baseDistance * dolly;
-  const orbit = 0.14 * wave(t, 1);
-  const height = 2.1 + 0.3 * wave(t, 1, Math.PI / 2);
-  camera.position.set(distance * Math.sin(orbit), height, distance * Math.cos(orbit));
-  camera.lookAt(0, 0.05, 0);
+/** Fixed, front-on and centred; a slow symmetric push-in peaks mid-loop. */
+function placeCamera(camera, t, baseDistance, centreY) {
+  const distance = baseDistance * (1 - 0.045 * (1 - Math.cos((TAU * t) / LOOP)) * 0.5);
+  camera.position.set(0, centreY + distance * CAMERA_LIFT, distance);
+  camera.lookAt(0, centreY, 0);
   camera.updateMatrixWorld();
 }
 
@@ -214,18 +174,14 @@ export function createGraphLoop(canvas, { preserveDrawingBuffer = false, portrai
   scene.environmentIntensity = 0.55;
   pmrem.dispose();
 
+  const layout = layoutFor(portrait);
+  const frame = portrait ? FRAME.portrait : FRAME.wide;
   const camera = new PerspectiveCamera(FOV, 21 / 9, 0.1, 120);
-  const mats = createMaterials();
-  createStage(scene, portrait ? PORTRAIT_GROUND_Y : GROUND_Y);
-  const sourceList = sourcesFor(portrait);
-  const sources = createSources(scene, mats, sourceList);
-  const agent = createAgentOrb(scene);
-  const paths = agentPaths(portrait);
-  const graph = createGraph(scene);
-  const particles = createParticles(scene, sourceList);
+  createStage(scene, layout.ground);
+  const files = createFiles(scene, createMaterials(), layout);
+  const agent = createAgent(scene, layout);
+  const graph = createGraph(scene, layout);
 
-  const fixedWidthLines = [mats.edge];
-  const baseWidths = new Map(fixedWidthLines.map((m) => [m, m.linewidth]));
   let baseDistance = 17;
   let lineScale = 1;
 
@@ -234,26 +190,21 @@ export function createGraphLoop(canvas, { preserveDrawingBuffer = false, portrai
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    const wideHalfWidth = camera.aspect < NARROW_ASPECT ? NARROW_HALF_WIDTH : FRAME_HALF_WIDTH;
-    const halfWidth = portrait ? PORTRAIT_HALF_WIDTH : wideHalfWidth;
-    const halfHeight = portrait ? PORTRAIT_HALF_HEIGHT : FRAME_HALF_HEIGHT;
-    baseDistance = Math.max(halfHeight / HALF_TAN, halfWidth / (camera.aspect * HALF_TAN));
-    // Portrait shows fewer world units across, so lines keep the same weight relative to the nodes.
-    const referenceWidth = portrait ? REFERENCE_WIDTH * (PORTRAIT_HALF_WIDTH / FRAME_HALF_WIDTH) : REFERENCE_WIDTH;
-    lineScale = Math.min(2, Math.max(0.75, width / referenceWidth));
-    const materials = [...fixedWidthLines, ...graph.lines.map((l) => l.material)];
-    for (const material of materials) material.resolution.set(width, height);
-    for (const [material, base] of baseWidths) material.linewidth = base * lineScale;
+    baseDistance = Math.max(frame.halfHeight / HALF_TAN, frame.halfWidth / (camera.aspect * HALF_TAN));
+    // Lines keep the same weight relative to the nodes at any output size.
+    const referenceWidth = REFERENCE_WIDTH * (frame.halfWidth / FRAME.wide.halfWidth);
+    lineScale = Math.min(2.2, Math.max(0.75, width / referenceWidth));
+    for (const material of [...files.map((f) => f.edge), ...graph.lines.map((l) => l.material)]) {
+      material.resolution.set(width, height);
+    }
   }
 
   function renderAt(time) {
     const t = ((time % LOOP) + LOOP) % LOOP;
-    placeCamera(camera, t, baseDistance);
-    updateSources(sources, t);
-    updateAgent(agent, t, paths);
-    agent.update(t, camera);
-    graph.update(t, camera, { position: agent.group.position, visible: agent.group.visible }, lineScale);
-    particles.update(t);
+    placeCamera(camera, t, baseDistance, frame.centreY);
+    const anchors = updateFiles(files, t, lineScale);
+    updateAgent(agent, t, camera);
+    graph.update(t, camera, { position: agent.group.position, visible: agent.group.visible }, anchors, lineScale);
     renderer.render(scene, camera);
   }
 

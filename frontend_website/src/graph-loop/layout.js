@@ -1,128 +1,151 @@
-// Hand-placed composition for a 21:9 frame. World units: the visible frame is
-// roughly x in [-8, 8], y in [-3.4, 3.4] at z = 0. Graph nodes sit on three
-// depth layers (z around -1.2, 0 and +1.2) so the camera dolly gives parallax.
+// The "Shelf" composition: six files in a row along the bottom, a graph that
+// narrows upward like a fountain (6, 5 and 3 nodes), and the agent at top
+// centre. Everything is mirror-symmetric about x = 0. World units: the wide
+// frame shows roughly x in [-7.6, 7.6], y in [-3.3, 3.3] at z = 0.
+//
+// This module is plain data and timing, with no three.js, so the symmetry
+// and timeline are unit-tested in scripts/graph-loop-layout.test.mjs.
 
-/** Source objects: where they float at rest and which graph node they become. */
-export const SOURCES = [
-  { kind: "document", home: [-6.1, 1.35, 0.0], node: "S0" },
-  { kind: "table", home: [-5.6, -1.55, 0.8], node: "S1" },
-  { kind: "waveform", home: [-3.5, 2.4, -1.2], node: "S2" },
-  { kind: "image", home: [5.9, 1.45, -0.3], node: "S3" },
-  { kind: "code", home: [5.5, -1.6, 0.7], node: "S4" },
-  { kind: "database", home: [3.4, -2.45, -0.6], node: "S5" },
+/** Left to right, the file each bottom-row node B0-B5 rises out of. */
+export const FILE_KINDS = ["document", "image", "table", "waveform", "code", "database"];
+
+/** The mirrored pair of files the agent's search lands on. */
+export const LIT_FILES = ["image", "code"];
+
+export const NODE_ROWS = [
+  { name: "bottom", ids: ["B0", "B1", "B2", "B3", "B4", "B5"] },
+  { name: "middle", ids: ["M0", "M1", "M2", "M3", "M4"] },
+  { name: "top", ids: ["T0", "T1", "T2"] },
 ];
 
-// Phones get a 4:5 portrait frame: the graph keeps its shape and the sources
-// rest in a row above and a row below it instead of at the far left and right.
-const PORTRAIT_HOMES = {
-  document: [-3.0, 3.75, 0.0],
-  waveform: [-0.45, 4.35, -1.2],
-  image: [2.85, 3.8, -0.3],
-  table: [-2.9, -3.8, 0.8],
-  database: [0.4, -4.3, -0.6],
-  code: [2.95, -3.7, 0.7],
+const rowOf = (id) => NODE_ROWS.find((row) => row.ids.includes(id));
+
+/** B1 <-> B4, M0 <-> M4, T1 <-> T1, ... */
+export const mirrorOf = (id) => {
+  if (id === "agent") return id;
+  const { ids } = rowOf(id);
+  return ids[ids.length - 1 - ids.indexOf(id)];
 };
 
-/** Source objects for the wide (default) or portrait composition. */
-export const sourcesFor = (portrait) =>
-  portrait ? SOURCES.map((source) => ({ ...source, home: PORTRAIT_HOMES[source.kind] })) : SOURCES;
-
-// role: source | hub | entry | leaf. `order` staggers the build.
-export const NODES = [
-  { id: "S0", pos: [-2.9, 0.9, 0.3], r: 0.19, role: "source" },
-  { id: "S1", pos: [-2.6, -1.0, 0.9], r: 0.19, role: "source" },
-  { id: "S2", pos: [-1.3, 1.6, -1.2], r: 0.19, role: "source" },
-  { id: "S3", pos: [2.7, 1.1, -0.5], r: 0.19, role: "source" },
-  { id: "S4", pos: [2.4, -1.1, 0.8], r: 0.19, role: "source" },
-  { id: "S5", pos: [0.9, -1.7, -0.9], r: 0.19, role: "source" },
-  { id: "H0", pos: [-1.5, 0.1, 0.0], r: 0.17, role: "hub", order: 0 },
-  { id: "H1", pos: [-0.2, 0.75, 0.6], r: 0.17, role: "hub", order: 2 },
-  { id: "H2", pos: [0.3, -0.55, -0.4], r: 0.16, role: "hub", order: 4 },
-  { id: "H3", pos: [1.5, 0.3, 0.2], r: 0.17, role: "hub", order: 1 },
-  { id: "H4", pos: [-0.9, -0.95, 1.3], r: 0.14, role: "hub", order: 5 },
-  { id: "H5", pos: [0.8, 1.45, 1.0], r: 0.14, role: "hub", order: 3 },
-  { id: "Q", pos: [3.45, 0.15, 0.4], r: 0.14, role: "entry", order: 6 },
-  { id: "L0", pos: [-2.0, 1.75, 1.4], r: 0.09, role: "leaf", order: 7 },
-  { id: "L1", pos: [-3.5, -0.1, -1.1], r: 0.09, role: "leaf", order: 9 },
-  { id: "L2", pos: [1.9, -1.85, -1.4], r: 0.09, role: "leaf", order: 8 },
-  { id: "L3", pos: [3.3, 1.75, 0.9], r: 0.08, role: "leaf", order: 11 },
-  { id: "L4", pos: [-0.4, -1.85, -0.2], r: 0.09, role: "leaf", order: 10 },
-  { id: "L5", pos: [1.2, 1.95, -1.5], r: 0.08, role: "leaf", order: 12 },
-  { id: "L6", pos: [-2.1, -1.75, -0.8], r: 0.08, role: "leaf", order: 13 },
-];
+/** How far a node sits from the centre of its row: 0 for the centre pair. */
+const rankOf = (id) => {
+  const { ids } = rowOf(id);
+  const i = ids.indexOf(id);
+  return Math.floor(Math.abs(i - (ids.length - 1) / 2));
+};
 
 export const EDGES = [
-  ["S0", "H0"], ["S1", "H0"], ["S1", "H4"], ["S2", "H1"], ["S2", "H0"],
-  ["H0", "H1"], ["H0", "H4"], ["H1", "H2"], ["H1", "H5"], ["H4", "H2"],
-  ["H2", "H3"], ["H2", "S5"], ["H3", "S3"], ["H3", "S4"], ["H3", "Q"],
-  ["Q", "S3"], ["Q", "S4"], ["H5", "S3"], ["H5", "H3"], ["H1", "H3"],
-  ["L0", "S0"], ["L0", "H1"], ["L1", "S0"], ["L1", "S1"], ["L2", "S5"],
-  ["L2", "S4"], ["L3", "S3"], ["L4", "H4"], ["L4", "S5"], ["L5", "H5"],
-  ["L5", "S2"], ["L6", "S1"], ["L6", "H4"],
+  // Each middle node sits between two bottom nodes.
+  ...[0, 1, 2, 3, 4].flatMap((i) => [[`M${i}`, `B${i}`], [`M${i}`, `B${i + 1}`]]),
+  ["M0", "M1"], ["M1", "M2"], ["M2", "M3"], ["M3", "M4"],
+  ["T0", "M0"], ["T0", "M1"], ["T2", "M3"], ["T2", "M4"],
+  ["T1", "M1"], ["T1", "M2"], ["T1", "M3"],
+  ["T0", "T1"], ["T1", "T2"],
 ];
+
+/** When each part of the loop happens, in seconds of a 12 s loop. */
+export const T = {
+  rise: { start: 1.4, stagger: 0.16, duration: 1.0 },
+  middle: { start: 2.75, stagger: 0.14 },
+  top: { start: 3.75, stagger: 0.14 },
+  nodePop: 0.5,
+  edgeDraw: 0.55,
+  agentEnter: [4.7, 5.5],
+  agentLink: [5.55, 5.9],
+  searchStart: 5.9,
+  // Pulse windows: agent -> T1, T1 -> M1/M3, M1/M3 -> B1/B4, B1/B4 down the threads.
+  search: [[5.9, 6.25], [6.25, 6.7], [6.7, 7.15], [7.15, 7.6]],
+  dim: [6.0, 6.7],
+  fileLift: [7.45, 8.0],
+  // The answer travels back up the same path, faster.
+  returnStart: 8.35,
+  returning: [[8.35, 8.7], [8.7, 9.0], [9.0, 9.3], [9.3, 9.6]],
+  receive: [9.6, 10.05],
+  reset: 10.05,
+  unlight: [10.05, 10.6],
+  fold: { top: [10.25, 10.75], middle: [10.6, 11.1] },
+  sink: [11.0, 11.8],
+  sinkEnd: 11.8,
+  agentExit: [10.95, 11.55],
+  // The agent's mark changes on arrival and after it has the answer, never mid-pulse.
+  agentMorphs: [5.05, 10.1, 10.42, 10.74],
+  morphDuration: 0.28,
+};
+
+/** When a node pops into place. Bottom nodes "appear" once they reach the top of their thread. */
+export function nodeAppearAt(id) {
+  const row = rowOf(id);
+  const rank = rankOf(id);
+  if (row.name === "bottom") return T.rise.start + rank * T.rise.stagger + T.rise.duration;
+  const timing = T[row.name];
+  return timing.start + rank * timing.stagger;
+}
+
+/** When bottom node B<i> starts rising out of its file. */
+export const riseStart = (id) => T.rise.start + rankOf(id) * T.rise.stagger;
 
 /**
- * The cited evidence path, traced backward from the agent's entry node to
- * the original sources. Each hop lights up over `dur` seconds from `at`.
+ * The lit search path, stage by stage. Edge stages pair a node with its mirror
+ * partner; the last stage runs down the threads into the lit files.
  */
-export const EVIDENCE = [
-  { from: "Q", to: "H3", at: 6.45, dur: 0.38 },
-  { from: "H3", to: "H1", at: 6.83, dur: 0.4 },
-  { from: "H3", to: "S3", at: 6.83, dur: 0.44 },
-  { from: "H1", to: "H0", at: 7.23, dur: 0.38 },
-  { from: "H1", to: "S2", at: 7.23, dur: 0.42 },
-  { from: "H0", to: "S0", at: 7.61, dur: 0.4 },
+export const LIT_STAGES = [
+  { kind: "link", hops: [["agent", "T1"]] },
+  { kind: "edge", hops: [["T1", "M1"], ["T1", "M3"]] },
+  { kind: "edge", hops: [["M1", "B1"], ["M3", "B4"]] },
+  { kind: "thread", hops: [["B1", "image"], ["B4", "code"]] },
 ];
 
-/** Which nodes are cited, and when the pulse reaches (locks) each of them. */
-export const LOCK_TIMES = EVIDENCE.reduce(
-  (acc, hop) => ({ ...acc, [hop.to]: hop.at + hop.dur }),
-  { Q: 6.45 },
-);
+export const LIT_NODES = new Set(["T1", "M1", "M3", "B1", "B4"]);
 
-// The closing formation follows the nav mark: an open triangle whose apex
-// sits slightly left of centre, drawn as two strokes (BL -> TOP -> BR).
-export const MARK = {
-  BL: { rep: "H0", pos: [-1.2, -0.66, 0.3] },
-  TOP: { rep: "H1", pos: [-0.04, 1.2, 0.3] },
-  BR: { rep: "H3", pos: [1.26, -0.86, 0.3] },
-};
-export const MARK_EDGES = [["H0", "H1"], ["H1", "H3"]];
-
-/** Every node merges into the mark vertex on its side of the frame. */
-export const markGroupOf = (node) => {
-  if (node.pos[0] < -0.8) return "BL";
-  if (node.pos[0] > 0.8) return "BR";
-  return "TOP";
+const WIDE = {
+  rowY: { bottom: -0.42, middle: 0.52, top: 1.46 },
+  rowZ: { bottom: 0.25, middle: 0, top: -0.25 },
+  spacing: 2.1,
+  radius: { bottom: 0.25, middle: 0.25, top: 0.27 },
+  agent: [0, 2.5, -0.25],
+  // One row of six files.
+  fileAt: (i, spacing) => [(i - 2.5) * spacing, -2.22, 0.35],
+  ground: -2.92,
 };
 
-/** Master timeline, in seconds. */
-export const T = {
-  sourceDepart: 1.1,
-  sourceTravel: 2.2,
-  sourceStagger: 0.12,
-  hubAppear: 3.0,
-  hubStagger: 0.08,
-  edgeDraw: 0.6,
-  agentEnter: [5.2, 6.35],
-  dim: [6.9, 7.7],
-  collapse: [8.55, 9.7],
-  // The agent orb morphs Claude -> Codex -> Cursor -> Gemini -> Grok, holds
-  // the last mark, then leaves.
-  agentMorph: { first: 6.5, every: 0.77, duration: 0.32 },
-  agentExit: [9.55, 10.5],
-  markFade: [10.35, 11.0],
-  sourceReturn: 10.45,
-  sourceReturnEnd: 11.85,
+// Phones: two rows of three files under a narrower graph. The upper row sits
+// in front, so the lower row's threads rise behind it.
+const PORTRAIT_FILE_SLOTS = {
+  document: [-2.55, -3.85, -0.6],
+  table: [0, -3.85, -0.6],
+  database: [2.55, -3.85, -0.6],
+  image: [-2.55, -1.95, 0.55],
+  waveform: [0, -1.95, 0.55],
+  code: [2.55, -1.95, 0.55],
 };
 
-export const LABELLED_NODES = ["S0", "S3", "H1", "H3", "S5", "L1"];
-
-/** Outbound flight window for source i; its node appears 70% of the way in. */
-export const sourceWindow = (i) => {
-  const depart = T.sourceDepart + i * T.sourceStagger;
-  return { depart, arrive: depart + T.sourceTravel, nodeAt: depart + T.sourceTravel * 0.7 };
+const PORTRAIT = {
+  rowY: { bottom: 0.1, middle: 1.35, top: 2.6 },
+  rowZ: { bottom: 0.15, middle: 0, top: -0.2 },
+  spacing: 1.3,
+  radius: { bottom: 0.24, middle: 0.24, top: 0.26 },
+  agent: [0, 3.85, -0.2],
+  fileAt: (i) => PORTRAIT_FILE_SLOTS[FILE_KINDS[i]],
+  ground: -4.6,
 };
 
-/** When source i starts flying home from its mark vertex. */
-export const returnStart = (i) => T.sourceReturn + i * 0.07;
+/** Positions for the wide (default) or portrait cut. */
+export function layoutFor(portrait = false) {
+  const spec = portrait ? PORTRAIT : WIDE;
+  const nodes = NODE_ROWS.flatMap(({ name, ids }) =>
+    ids.map((id, i) => ({
+      id,
+      row: name,
+      pos: [(i - (ids.length - 1) / 2) * spec.spacing, spec.rowY[name], spec.rowZ[name]],
+      r: spec.radius[name],
+    })),
+  );
+  const files = FILE_KINDS.map((kind, i) => ({ kind, node: `B${i}`, pos: spec.fileAt(i, spec.spacing) }));
+  return {
+    nodes,
+    byId: Object.fromEntries(nodes.map((n) => [n.id, n])),
+    files,
+    agent: spec.agent,
+    ground: spec.ground,
+  };
+}

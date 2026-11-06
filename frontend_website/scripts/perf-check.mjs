@@ -7,7 +7,8 @@
 //   options: --runs=3  --profile=desktop|phone  --path=/products/opengraph-image/
 //
 // Each profile loads the built site from `vite preview`, waits without
-// scrolling (the video is fetched on idle), then scrolls the video into view
+// scrolling (the video is fetched only as it nears the viewport, so this should
+// stay at zero), then scrolls the video into view
 // and watches it play (pages without the video skip that part, and their
 // video metrics are reported as null). The phone profile uses Lighthouse's mobile settings:
 // slow 4G and a 4x slower CPU. Medians across runs are reported. With
@@ -30,7 +31,7 @@ const PROFILES = {
   },
 };
 
-const SETTLE_MS = 6000; // idle time after load, long enough for the idle video fetch
+const SETTLE_MS = 6000; // idle time after load, long enough to catch any early video fetch
 const PLAYBACK_MS = 4000;
 const VIDEO_TIMEOUT_MS = 30000;
 
