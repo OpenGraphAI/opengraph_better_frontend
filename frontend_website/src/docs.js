@@ -16,6 +16,7 @@ import {
   Copy,
   ExternalLink,
   FileCode2,
+  FileText,
   GitFork,
   Image as ImageIcon,
   Menu,
@@ -30,6 +31,7 @@ import {
   SquarePen,
   SquareTerminal,
   Sun,
+  Table,
   Wrench,
   X,
   createIcons,
@@ -43,6 +45,8 @@ import quickstartMarkdown from "../docs/content/getting-started/quickstart.md?ra
 import claudeMcpMarkdown from "../docs/content/getting-started/claude-mcp.md?raw";
 import contextGraphsMarkdown from "../docs/content/concepts/context-graphs.md?raw";
 import imageOverviewMarkdown from "../docs/content/opengraph-image/README.md?raw";
+import textOverviewMarkdown from "../docs/content/opengraph-text/README.md?raw";
+import tableOverviewMarkdown from "../docs/content/opengraph-table/README.md?raw";
 import mcpToolsMarkdown from "../docs/content/reference/mcp-tools.md?raw";
 import cliMarkdown from "../docs/content/reference/cli.md?raw";
 
@@ -52,6 +56,8 @@ const markdownBySource = {
   "getting-started/claude-mcp.md": claudeMcpMarkdown,
   "concepts/context-graphs.md": contextGraphsMarkdown,
   "opengraph-image/README.md": imageOverviewMarkdown,
+  "opengraph-text/README.md": textOverviewMarkdown,
+  "opengraph-table/README.md": tableOverviewMarkdown,
   "reference/mcp-tools.md": mcpToolsMarkdown,
   "reference/cli.md": cliMarkdown,
 };
@@ -62,6 +68,8 @@ const pageIcons = {
   "getting-started/claude-mcp": "plug",
   "concepts/context-graphs": "network",
   "opengraph-image/overview": "image",
+  "opengraph-text/overview": "file-text",
+  "opengraph-table/overview": "table",
   "reference/mcp-tools": "wrench",
   "reference/cli": "square-terminal",
 };

@@ -17,6 +17,8 @@ Create and activate your preferred Python environment, then install the package 
 pip install -e .
 ```
 
+The released package is also on PyPI as `pip install opengraph-image`. This quickstart installs from the repository so you can use its sample images.
+
 ## 3. Configure a model provider
 
 Copy the example environment file and add a supported model-provider key. For example:

@@ -62,10 +62,7 @@ function dotAt(host, d) {
 
 /** Morph start times: one per hand-off between consecutive agents. */
 const morphWindows = () =>
-  AGENTS.slice(1).map((_, i) => {
-    const start = T.agentMorph.first + i * T.agentMorph.every;
-    return { start, end: start + T.agentMorph.duration };
-  });
+  T.agentMorphs.slice(0, AGENTS.length - 1).map((start) => ({ start, end: start + T.morphDuration }));
 
 function buildTimeline(host, state) {
   const timeline = createTimeline({ autoplay: false });
@@ -131,7 +128,7 @@ export function createAgentOrb(scene) {
 
   const orbMaterial = new MeshStandardMaterial({ color: AGENTS[0].orb, roughness: 0.78, metalness: 0 });
   const orb = new Mesh(new SphereGeometry(ORB_RADIUS, 64, 40), orbMaterial);
-  orb.castShadow = true;
+  orb.castShadow = false; // it floats high above the files, like the nodes
   const hull = new Mesh(
     new SphereGeometry(ORB_RADIUS, 48, 32),
     new MeshBasicMaterial({ color: PALETTE.ink, side: BackSide }),

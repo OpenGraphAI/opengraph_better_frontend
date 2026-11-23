@@ -1,6 +1,6 @@
 # MCP tools
 
-The OpenGraph Image MCP server exposes five operations. Together they cover graph construction, discovery, inspection, and natural-language querying.
+The OpenGraph Image MCP server exposes six operations. Together they cover graph construction, discovery, inspection, natural-language querying, and an interactive view.
 
 | Tool | Input | Use it when… |
 | --- | --- | --- |
@@ -9,6 +9,7 @@ The OpenGraph Image MCP server exposes five operations. Together they cover grap
 | `get_image_entities` | `image_filename`, `graph_path` | You want every entity and edge connected to one image |
 | `list_images` | `graph_path` | You need to see which source images are represented |
 | `graph_summary` | `graph_path` | You want high-level graph statistics before querying |
+| `build_graph_html` | `graph_path` | You want an interactive `graph.html` to explore the graph in a browser |
 
 ## `build_graph`
 
@@ -56,6 +57,14 @@ Returns a compact overview of the graph and is a useful first call when an agent
 
 ```text
 graph_summary(graph_path="./photos/opengraph-out/graph.json")
+```
+
+## `build_graph_html`
+
+Renders a previously built graph to an interactive `graph.html`, written next to the resolved `graph.json`, and returns its path.
+
+```text
+build_graph_html(graph_path="./photos/opengraph-out/graph.json")
 ```
 
 > **Agent pattern:** Summarize first, query second, then inspect individual sources only when the answer needs deeper verification.

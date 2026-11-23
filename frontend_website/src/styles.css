@@ -795,17 +795,9 @@ body {
   color: var(--ground-ink);
   font-family: var(--sans);
   background-color: var(--ground);
-  background-image:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%),
-    radial-gradient(circle at 12% 78%, rgb(var(--shadow-rgb) / 0.12), transparent 34%);
-}
-
-/* On phones the portrait graph video covers the shadow blob, which would only
-   show as a grey band along the video's faded edges. */
-@media (max-width: 600px) {
-  .compiler-section {
-    background-image: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%);
-  }
+  /* No shadow blob in the lower left: it sat under the graph video and showed
+     as a grey band beside the files. */
+  background-image: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.34), transparent 31%);
 }
 
 .compiler-header {
@@ -4445,20 +4437,25 @@ body.modal-open .to-top-button {
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 .site-footer {
   --footer-gutter: clamp(24px, 5vw, 76px);
-  padding: clamp(56px, 6vw, 88px) var(--footer-gutter) 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(56px, 6vw, 88px) var(--footer-gutter) clamp(40px, 5vw, 64px);
   color: var(--panel-ink);
   background: var(--panel-deep);
 }
 
-/* Interactive pixel field along the bottom edge (src/footer-pixels.js). It runs
-   edge to edge, so it cancels the footer's side gutters. */
+/* The footer's interactive pixel field (src/footer-pixels.js) is its
+   background: it fills the whole footer behind the text and links, and the
+   footer itself listens for the pointer, so links stay clickable. */
 .footer-pixels {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
   display: block;
-  width: calc(100% + 2 * var(--footer-gutter));
-  height: clamp(150px, 18vw, 260px);
-  margin: clamp(28px, 3vw, 40px) calc(-1 * var(--footer-gutter)) 0;
-  background: #000;
-  touch-action: pan-y;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .footer-shell {
