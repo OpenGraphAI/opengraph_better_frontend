@@ -1,0 +1,596 @@
+/* Product films in the hero of product and use-case pages (see src/films/). */
+
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("/mockups/claude-code/fonts/anthropic-sans-latin.woff2") format("woff2");
+  font-weight: 300 800;
+  font-display: swap;
+}
+
+.page-film {
+  position: relative;
+  margin: clamp(36px, 5vw, 64px) 0 0;
+}
+
+.film-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgb(var(--ground-ink-rgb) / 0.08);
+  border-radius: clamp(16px, 2vw, 24px);
+  background: radial-gradient(100% 90% at 75% 0%, #fff 0%, #f4f1ea 55%, #ebe6dc 100%);
+  perspective: 1800px;
+}
+
+/* Until the film mounts (and without JavaScript) the build specimen stands in. */
+.page-film .specimen {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.page-film.is-live .specimen {
+  display: none;
+}
+
+.page-film:not(.is-live) .film-stage {
+  display: none;
+}
+
+.film-toggle {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 6px 12px;
+  border: 1px solid rgb(var(--ground-ink-rgb) / 0.12);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+  color: var(--ground-ink);
+  font: 500 12px var(--sans);
+  cursor: pointer;
+}
+
+.film-toggle:hover {
+  background: #fff;
+}
+
+.film-toggle:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.page-film:not(.is-live) .film-toggle {
+  display: none;
+}
+
+.film-rig {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.film-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  color: var(--paper-ink);
+  font-family: var(--sans);
+}
+
+.film-world > *,
+.film-win > *:not(.film-bar) {
+  position: absolute;
+}
+
+/* ── App window and command ─────────────────────────────────────────────── */
+.film-win {
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.08);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 70px 140px -60px rgb(var(--shadow-rgb) / 0.5);
+  overflow: hidden;
+}
+
+.film-bar {
+  display: flex;
+  align-items: center;
+  height: 76px;
+  padding: 0 28px;
+}
+
+.film-cmd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 11px;
+  background: var(--panel);
+  color: var(--panel-ink);
+  font: 16px var(--mono);
+}
+
+.film-cmd b {
+  color: var(--code-fn-dark);
+  font-weight: 400;
+}
+
+.film-clip {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* ── Photos, boxes and citations ────────────────────────────────────────── */
+.film-photo {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #d8d2c6;
+}
+
+.film-shot {
+  position: absolute;
+  max-width: none;
+}
+
+.film-name {
+  position: absolute;
+  bottom: 9px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(17 19 23 / 0.6);
+  color: #fff;
+  font: 11px var(--mono);
+}
+
+.film-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--signal);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.film-sweep {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -50%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.film-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* One blue outline and a faint tint, so the box reads as a detection, not a frame. */
+.film-box {
+  position: absolute;
+  border: 2px solid var(--signal);
+  border-radius: 6px;
+  background: rgb(var(--signal-rgb) / 0.08);
+  opacity: 0;
+}
+
+.film-box b {
+  position: absolute;
+  top: -21px;
+  left: -2px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--signal);
+  color: #fff;
+  font: 500 11px var(--mono);
+  white-space: nowrap;
+}
+
+.film-box.label-below b {
+  top: auto;
+  bottom: -22px;
+}
+
+.film-box.label-inside b {
+  top: 6px;
+  left: 6px;
+}
+
+/* ── Graph ──────────────────────────────────────────────────────────────── */
+.film-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.film-edges line {
+  stroke: rgb(var(--signal-rgb) / 0.7);
+  stroke-width: 1.6;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.film-rel,
+.film-node {
+  position: absolute;
+  translate: -50% -50%;
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.film-rel {
+  padding: 2px 7px;
+  background: var(--paper);
+  color: var(--signal);
+  font: 500 13px var(--mono);
+}
+
+.film-node {
+  padding: 10px 18px;
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.12);
+  border-radius: 999px;
+  background: #fff;
+  font: 500 15px var(--mono);
+}
+
+.film-node.is-hub {
+  border-color: var(--panel);
+  background: var(--panel);
+  color: var(--panel-ink);
+}
+
+/* ── Documents and sheets ───────────────────────────────────────────────── */
+.film-doc,
+.film-sheet {
+  position: absolute;
+  margin: 0;
+  padding: 26px 28px;
+  overflow: hidden;
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 30px 60px -36px rgb(var(--shadow-rgb) / 0.45);
+}
+
+.film-doc-name,
+.film-sheet-name {
+  margin: 0 0 14px;
+  color: rgb(var(--paper-ink-rgb) / 0.5);
+  font: 12px var(--mono);
+}
+
+.film-doc-title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.film-doc-line {
+  margin: 0 0 10px;
+  color: rgb(var(--paper-ink-rgb) / 0.72);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.film-mark {
+  padding: 1px 2px;
+  background: linear-gradient(rgb(var(--signal-rgb) / 0.16), rgb(var(--signal-rgb) / 0.16)) no-repeat left / 0% 100%;
+  color: inherit;
+}
+
+.film-grid {
+  display: grid;
+  border-top: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
+  border-left: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
+  font: 14px var(--mono);
+}
+
+.film-cell {
+  padding: 9px 12px;
+  border-right: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
+  border-bottom: 1px solid rgb(var(--paper-ink-rgb) / 0.1);
+  white-space: nowrap;
+}
+
+.film-cell.is-head {
+  background: rgb(var(--paper-ink-rgb) / 0.04);
+  color: rgb(var(--paper-ink-rgb) / 0.55);
+  font-size: 12.5px;
+}
+
+/* ── Search bar (image and video search) ────────────────────────────────── */
+.film-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.12);
+  border-radius: 16px;
+  background: #fff;
+  font-size: 19px;
+}
+
+.film-search i {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 2px solid rgb(var(--paper-ink-rgb) / 0.45);
+  border-radius: 50%;
+}
+
+.film-chip {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--signal);
+  color: #fff;
+  font: 500 12px var(--mono);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+/* ── Video scrubber (image and video search) ────────────────────────────── */
+.film-scrubber {
+  height: 4px;
+  border-radius: 4px;
+  background: rgb(var(--paper-ink-rgb) / 0.1);
+  opacity: 0;
+}
+
+.film-scrubber-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--signal);
+  transform-origin: left;
+}
+
+.film-playhead {
+  position: absolute;
+  top: -6px;
+  left: -8px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 2px 8px rgb(var(--signal-rgb) / 0.4);
+}
+
+/* Which OpenGraph server reads a source (multimodal agents). */
+.film-server {
+  padding: 5px 11px;
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.12);
+  border-radius: 999px;
+  background: #fff;
+  color: rgb(var(--paper-ink-rgb) / 0.7);
+  font: 500 13px var(--mono);
+  opacity: 0;
+}
+
+/* ── Claude Code window ─────────────────────────────────────────────────── */
+.film-cc {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e1e0d9;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 60px 120px -50px rgb(var(--shadow-rgb) / 0.45);
+  color: #383835;
+  font-family: "Anthropic Sans", -apple-system, system-ui, sans-serif;
+  opacity: 0;
+}
+
+.film-cc-crumb {
+  display: flex;
+  gap: 8px;
+  padding: 20px 26px 14px;
+  border-bottom: 1px solid #e1e0d9;
+  font-size: 14.5px;
+}
+
+.film-cc-crumb b {
+  color: #0b0b0b;
+  font-weight: 600;
+}
+
+.film-cc-crumb i {
+  color: #898781;
+  font-style: normal;
+}
+
+.film-cc-stream {
+  flex: 1;
+  padding: 22px 26px 0;
+}
+
+.film-cc-said {
+  width: fit-content;
+  max-width: 92%;
+  padding: 11px 15px;
+  border-radius: 9px;
+  background: #ebf4fc;
+  color: #256abf;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0;
+  transform-origin: left bottom;
+}
+
+.film-cc-status {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 26px;
+  margin: 18px 0 12px;
+}
+
+.film-cc-thinking,
+.film-cc-call {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 24px;
+  font-size: 14.5px;
+  opacity: 0;
+}
+
+.film-cc-thinking {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #d97757;
+}
+
+.film-cc-thinking svg {
+  width: 18px;
+  height: 18px;
+  animation: film-burst 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.film-cc-thinking span {
+  background: linear-gradient(90deg, #898781 0 38%, #d97757 50%, #898781 62% 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: film-shimmer 1.3s linear infinite;
+}
+
+.film-cc-call {
+  color: #898781;
+}
+
+.film-cc-call b {
+  color: #0b0b0b;
+  font-weight: 600;
+}
+
+.film-cc-state {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.film-cc-spin,
+.film-cc-done {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.film-cc-spin {
+  border: 2px solid rgb(217 119 87 / 0.25);
+  border-top-color: #d97757;
+  animation: film-rot 0.7s linear infinite;
+}
+
+.film-cc-done {
+  background: #1a8633;
+  opacity: 0;
+}
+
+.film-cc-done::after {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 5px;
+  width: 3.5px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 1.8px 1.8px 0;
+  transform: rotate(45deg);
+}
+
+.film-cc-answer {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.62;
+}
+
+.film-cc-answer code {
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  font: 12.5px ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.film-cc-word {
+  display: inline-block;
+  opacity: 0;
+}
+
+.film-cc-dock {
+  padding: 10px 26px 18px;
+}
+
+.film-cc-composer {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 16px;
+  border: 1px solid #e1e0d9;
+  border-radius: 11px;
+  background: #f6f6f4;
+  color: #0b0b0b;
+  font-size: 15px;
+}
+
+.film-cc-placeholder {
+  position: absolute;
+  left: 16px;
+  color: #a5a49a;
+}
+
+.film-cc-enter {
+  margin-left: auto;
+  color: #898781;
+}
+
+.film-cc-toolbar {
+  display: flex;
+  gap: 18px;
+  padding: 12px 6px 0;
+  color: #898781;
+  font-size: 13.5px;
+}
+
+.film-cc-toolbar b {
+  margin-left: auto;
+  color: #0b0b0b;
+  font-weight: 600;
+}
+
+@keyframes film-burst {
+  50% { transform: rotate(90deg) scale(0.72); }
+  100% { transform: rotate(180deg); }
+}
+
+@keyframes film-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@keyframes film-rot {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-cc-thinking svg,
+  .film-cc-thinking span,
+  .film-cc-spin {
+    animation: none;
+  }
+}

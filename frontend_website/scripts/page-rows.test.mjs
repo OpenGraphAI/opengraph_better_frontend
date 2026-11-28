@@ -149,15 +149,22 @@ test("exchange renders you, agent and tool-call lines", () => {
   assert.match(html, /<li class="is-agent">/);
 });
 
+test("exchange marks file names as citations and keeps each message in a paragraph", () => {
+  const html = renderVisual("exchange", "you: Open site-reports.xlsx\nagent: ep07_step-015.jpg and notes.md, not v1.2");
+  assert.match(html, /<li class="is-you"><span class="row-speaker">You<\/span><p>Open <code class="row-file">site-reports\.xlsx<\/code><\/p><\/li>/);
+  assert.match(html, /<p><code class="row-file">ep07_step-015\.jpg<\/code> and <code class="row-file">notes\.md<\/code>, not v1\.2<\/p>/);
+});
+
 test("terminal marks prompts", () => {
   const html = renderVisual("terminal", "$ pip install opengraph-image\ndone");
   assert.match(html, /<span class="row-prompt"[^>]*>\$<\/span> pip install opengraph-image/);
 });
 
-test("Good to know: list items become limit cards, blockquotes become notes, links stay", () => {
+test("Good to know: list items become limit rows, blockquotes become notes, links stay", () => {
   const { goodToKnow } = renderRows(SAMPLE);
   assert.match(goodToKnow, /<aside class="page-notice">[\s\S]*hosted vision model/);
-  assert.match(goodToKnow, /<ul class="page-limits">[\s\S]*<strong>Still images only\.<\/strong>[\s\S]*Alpha software/);
+  assert.match(goodToKnow, /<ul class="page-limits">[\s\S]*<li><strong>Still images only<\/strong><span>Sample video frames first\.<\/span><\/li>/);
+  assert.match(goodToKnow, /<li><span>Alpha software<\/span><\/li>/);
   assert.match(goodToKnow, /href="\/docs\/opengraph-image\/overview\/"/);
 });
 
@@ -266,4 +273,15 @@ test("the Image docs overview says a build also writes graph.html", () => {
   const overview = readFileSync(resolve(root, "docs/content/opengraph-image/README.md"), "utf8");
   const lifecycle = overview.slice(overview.indexOf("## Build lifecycle"), overview.indexOf("## A relationship-aware query"));
   assert.match(lifecycle, /graph\.html/);
+});
+
+test("every product and use-case page plays a registered film, with the specimen as its fallback", async () => {
+  const { SCENES } = await import("../src/films/registry.js");
+  for (const page of contentPages) {
+    assert.ok(page.film?.name in SCENES, `${page.path}: film "${page.film?.name}" is not in src/films/registry.js`);
+    const html = renderPage(page);
+    assert.match(html, new RegExp(`<figure class="page-film" data-film="${page.film.name}">`), page.path);
+    assert.match(html, /<div class="film-stage" role="img" aria-label="[^"]{20,}">/, `${page.path}: film needs a description`);
+    assert.match(html, /<figure class="specimen">/, `${page.path}: the specimen stays as the fallback`);
+  }
 });

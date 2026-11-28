@@ -26,14 +26,18 @@ function renderRelated(page) {
   const cards = (page.related || [])
     .map((path) => contentPages.find((candidate) => candidate.path === path))
     .filter(Boolean)
-    .map((target) => `<a href="${target.path}"><b>${escapeHtml(target.navLabel)}</b><span>${escapeHtml(target.navBlurb)}</span></a>`);
+    .map((target) => `<li><a href="${target.path}"><b>${escapeHtml(target.navLabel)}</b><span>${escapeHtml(target.navBlurb)}</span></a></li>`);
   return cards.length
-    ? `<nav class="page-related-cards" aria-labelledby="page-related-title">
+    ? `<nav class="page-related" aria-labelledby="page-related-title">
         <h2 class="page-section-label" id="page-related-title">Related</h2>
-        <div>${cards.join("")}</div>
+        <ul class="page-link-tree">${cards.join("")}</ul>
       </nav>`
     : "";
 }
+
+/** Docs links and related pages, side by side at the foot of the page. */
+const renderOnward = (...navs) =>
+  navs.some(Boolean) ? `<div class="page-onward">${navs.join("")}</div>` : "";
 
 // A fact is plain text, or { label, href } when it should link out (e.g. to PyPI).
 const renderFact = (fact) =>
@@ -82,6 +86,15 @@ function renderSpecimen(specimen) {
       </figure>`;
 }
 
+/** The product film for the hero; the build specimen inside shows until it plays. */
+function renderFilm(page) {
+  if (!page.film) return renderSpecimen(page.specimen);
+  return `<figure class="page-film" data-film="${escapeHtml(page.film.name)}">
+          <div class="film-stage" role="img" aria-label="${escapeHtml(page.film.label)}"></div>
+          ${renderSpecimen(page.specimen)}
+        </figure>`;
+}
+
 /** Previous and next links walk products, then use cases, in navigation order. */
 function renderPager(page) {
   const index = contentPages.findIndex((candidate) => candidate.path === page.path);
@@ -102,7 +115,8 @@ function renderPageContent(page, heading, sections) {
   const facts = page.facts?.length
     ? `<ul class="page-facts" aria-label="Release details">${page.facts.map((fact) => `<li>${renderFact(fact)}</li>`).join("")}</ul>`
     : "";
-  return `<header class="page-hero${page.specimen ? " has-specimen" : ""}">
+  const heroClass = page.film ? " has-film" : page.specimen ? " has-specimen" : "";
+  return `<header class="page-hero${heroClass}">
       <div class="page-hero-inner">
         <div class="page-hero-copy">
           ${renderBreadcrumb(page)}
@@ -114,15 +128,14 @@ function renderPageContent(page, heading, sections) {
             ${page.secondaryCta ? button(page.secondaryCta, "secondary") : ""}
           </div>
         </div>
-        ${renderSpecimen(page.specimen)}
+        ${renderFilm(page)}
       </div>
     </header>
 
     <div class="page-rows-wrap">
       ${renderRowsHtml(sections)}
       ${sections.goodToKnow}
-      ${sections.goDeeper}
-      ${renderRelated(page)}
+      ${renderOnward(sections.goDeeper, renderRelated(page))}
     </div>
 
     ${renderPager(page)}

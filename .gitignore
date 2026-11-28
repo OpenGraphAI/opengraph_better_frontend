@@ -17,3 +17,5 @@ claude-desktop-mockup/
 
 # Vercel link for deploys run from the repo root
 .vercel/
+.vercel
+.env*

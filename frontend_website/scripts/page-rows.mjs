@@ -69,6 +69,10 @@ const parse = (tokens, links) => markdown.parser(Object.assign([...tokens], { li
 
 const lines = (source) => source.split("\n").map((line) => line.trim()).filter(Boolean);
 
+// File names in a message are the evidence the agent cites, so they get the citation colour.
+const FILE_NAME = /\b[\w-]+(?:\.[\w-]+)*\.(?:jpe?g|png|webp|pdf|md|txt|csv|xlsx|json)\b/g;
+const citeFiles = (html) => html.replace(FILE_NAME, (name) => `<code class="row-file">${name}</code>`);
+
 const VISUALS = {
   edges(source) {
     const rows = lines(source);
@@ -97,7 +101,8 @@ const VISUALS = {
       if (line.startsWith("->")) return `<li class="is-call"><code>${escapeHtml(line.slice(2).trim())}</code></li>`;
       const match = line.match(/^(you|agent):\s*(.*)$/);
       if (!match) throw new Error(`Exchange line "${line}" must start with "you:", "agent:" or "->"`);
-      return `<li class="is-${match[1]}"><span class="row-speaker">${match[1]}</span> ${escapeHtml(match[2])}</li>`;
+      const speaker = match[1] === "you" ? "You" : "Agent";
+      return `<li class="is-${match[1]}"><span class="row-speaker">${speaker}</span><p>${citeFiles(escapeHtml(match[2]))}</p></li>`;
     });
     return `<ol class="row-exchange">${items.join("")}</ol>`;
   },
@@ -138,7 +143,12 @@ function renderGoodToKnow(tokens, links) {
   const parts = tokens.map((token) => {
     if (token.type === "blockquote") return `<aside class="page-notice">${parse(token.tokens, links)}</aside>`;
     if (token.type === "list") {
-      const items = token.items.map((item) => `<li>${markdown.parseInline(item.text)}</li>`);
+      const items = token.items.map((item) => {
+        // "**Title.** Detail" splits into a title column and a detail column.
+        const [, title, detail] = item.text.match(/^\*\*(.+?)\.?\*\*\s*(.*)$/s) ?? [, "", item.text];
+        const titleHtml = title ? `<strong>${markdown.parseInline(title)}</strong>` : "";
+        return `<li>${titleHtml}<span>${markdown.parseInline(detail)}</span></li>`;
+      });
       return `<ul class="page-limits">${items.join("")}</ul>`;
     }
     return parse([token], links);
@@ -155,11 +165,11 @@ function renderGoDeeper(tokens) {
     const match = item.text.match(/^\[([^\]]+)\]\(([^)\s]+)\)\s*(?:[—–-]\s*)?(.*)$/);
     if (!match) throw new Error(`Go deeper item "${item.text}" must read "[Label](href) — blurb"`);
     const [, label, href, blurb] = match;
-    return `<a href="${escapeHtml(href)}"><b>${escapeHtml(label)}</b>${blurb ? `<span>${escapeHtml(blurb)}</span>` : ""}</a>`;
+    return `<li><a href="${escapeHtml(href)}"><b>${escapeHtml(label)}</b>${blurb ? `<span>${escapeHtml(blurb)}</span>` : ""}</a></li>`;
   });
   return `<nav class="page-go-deeper" aria-labelledby="go-deeper">
         <h2 class="page-section-label" id="go-deeper">Go deeper in the docs</h2>
-        <div class="page-go-deeper-cards">${cards.join("")}</div>
+        <ul class="page-link-tree">${cards.join("")}</ul>
       </nav>`;
 }
 

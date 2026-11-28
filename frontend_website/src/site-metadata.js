@@ -31,6 +31,7 @@ export const productPages = [
     facts: [{ label: "v0.1.2 on PyPI", href: "https://pypi.org/project/opengraph-image/0.1.2/" }, "Python 3.11+", "Apache-2.0", "6 MCP tools"],
     primaryCta: { label: "Read the quickstart", href: "/docs/getting-started/quickstart/" },
     secondaryCta: { label: "View on GitHub", href: `${repoUrl}/tree/main/opengraph-image` },
+    film: { name: "opengraph-image", label: "Film: three kitchen photos are dealt into a window, OpenGraph Image boxes the tablet, mouse and fruit basket in one of them and links them into a graph, then Claude Code asks which photo shows a mouse next to a tablet and the answer, kitchen-01.jpg, lights up." },
     specimen: {
       commands: ["opengraph-image build ./photos"],
       inputs: ["kitchen-01.jpg", "kitchen-02.jpg", "desk-03.png"],
@@ -57,6 +58,7 @@ export const productPages = [
     secondaryCta: { label: "View on GitHub", href: `${repoUrl}/tree/main/opengraph-text` },
     // Inputs are the package's own test documents (opengraph-text/tests/
     // sample_documents); each edge restates a sentence in them.
+    film: { name: "opengraph-text", label: "Film: three documents arrive, a sentence in doc_anthropic.md is highlighted and its names become linked graph nodes, then Claude Code asks who founded Anthropic and the answer cites doc_anthropic.md, which lights up." },
     specimen: {
       commands: ["opengraph-text build ./sample_documents"],
       inputs: ["doc_anthropic.md", "doc_openai.md", "doc_competition.md"],
@@ -82,6 +84,7 @@ export const productPages = [
     facts: ["Preview · not yet on PyPI", "Python 3.11+", "5 MCP tools"],
     primaryCta: { label: "View on GitHub", href: `${repoUrl}/tree/main/opengraph-table` },
     secondaryCta: { label: "Talk to us", href: "/#about" },
+    film: { name: "opengraph-table", label: "Film: two spreadsheets open side by side, the Acme Robotics rows in both merge into one graph node with its part and cost, then Claude Code asks which supplier costs the most and the cited total_cost cell in q3-costs.csv lights up." },
     specimen: {
       commands: ["opengraph-table build ./tables"],
       inputs: ["suppliers.xlsx", "q3-costs.csv", "whiteboard-photo.jpg"],
@@ -108,13 +111,14 @@ export const useCasePages = [
     lede: "Turn robot camera frames into a scene memory an agent can query: what was seen, where it sat, and which observation shows it.",
     primaryCta: { label: "Open the live sample", href: playgroundUrl },
     secondaryCta: { label: "OpenGraph Image", href: "/products/opengraph-image/" },
+    film: { name: "robotics", label: "Film: three robot camera frames of a kitchen sink slide in, the steel bowl, white bowl and sink in the middle frame become a graph, then Claude Code asks which frames show the steel bowl in the sink and the two matching frames light up." },
     specimen: {
       commands: ["opengraph-image build ./episode-07"],
       inputs: ["ep07_step-000.jpg", "ep07_step-015.jpg", "ep07_step-030.jpg"],
       edges: [
-        ["sponge", "inside", "sink", "0.91"],
-        ["gripper", "holding", "sponge", "0.87"],
-        ["sponge", "next_to", "dish brush", "0.84"],
+        ["steel bowl", "inside", "sink", "0.91"],
+        ["steel bowl", "next_to", "white bowl", "0.87"],
+        ["cutting board", "inside", "sink", "0.84"],
         ["ep07_step-015.jpg", "in_scene", "indoor_residential", "0.95"],
       ],
       output: "episode-07/opengraph-out/graph.json",
@@ -131,6 +135,7 @@ export const useCasePages = [
     lede: "Search a photo library or video frames for how things relate, not just which tags they carry, and get the matching files back.",
     primaryCta: { label: "Read the quickstart", href: "/docs/getting-started/quickstart/" },
     secondaryCta: { label: "OpenGraph Image", href: "/products/opengraph-image/" },
+    film: { name: "image-video-search", label: "Film: a strip of video frames and photos loads, the person and yellow umbrella in one frame become a graph, then Claude Code asks which frames show a person holding an umbrella and the three matching frames light up." },
     specimen: {
       commands: ["opengraph-image build ./frames"],
       inputs: ["t00041.jpg", "t00042.jpg", "street-14.jpg"],
@@ -154,13 +159,14 @@ export const useCasePages = [
     lede: "Give one agent structured access to your images, documents, and tables, and let it cite the source behind each step.",
     primaryCta: { label: "Connect Claude with MCP", href: "/docs/getting-started/claude-mcp/" },
     secondaryCta: { label: "View on GitHub", href: repoUrl },
+    film: { name: "multimodal-agents", label: "Film: a site report spreadsheet, a maintenance manual and a roof photo each get evidence marked, then Claude Code queries the table, text and image servers in turn, each source lighting up as it is called, and answers with a citation for every step." },
     specimen: {
       commands: ["claude mcp add opengraph-table -- opengraph-table-mcp", "claude mcp add opengraph-text -- opengraph-text-mcp", "claude mcp add opengraph-image -- opengraph-image-mcp"],
       inputs: ["site-reports.xlsx", "maintenance-manual.pdf", "site-photos/"],
       edges: [
         ["site-reports.xlsx", "contains_entity", "Site 14"],
-        ["maintenance-manual.pdf", "states", "\"Reseal roof cracks within 48 hours.\"", "0.90"],
-        ["water stain", "next_to", "roof vent", "0.81"],
+        ["maintenance-manual.pdf", "states", "\"Replace missing shingles within 48 hours.\"", "0.90"],
+        ["missing shingles", "next_to", "lifted shingle", "0.81"],
       ],
       output: "One graph per server, one agent across them",
     },
@@ -176,6 +182,7 @@ export const useCasePages = [
     lede: "Map papers, figures, and data tables into one place where every claim and value points back to the file it came from.",
     primaryCta: { label: "OpenGraph Text", href: "/products/opengraph-text/" },
     secondaryCta: { label: "Talk to us", href: "/#about" },
+    film: { name: "research", label: "Film: three papers arrive and a highlighter marks the dropout-rate claim in each, the claims gather around one topic node, then Claude Code lists every claim with its paper and the three papers light up." },
     specimen: {
       commands: ["opengraph-text build ./papers"],
       inputs: ["smith-2024.pdf", "lee-2025.pdf", "review-notes.md"],

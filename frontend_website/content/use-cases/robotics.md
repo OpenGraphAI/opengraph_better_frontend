@@ -34,12 +34,12 @@ $ claude mcp add opengraph-image -- opengraph-image-mcp
 ## Ask in plain language
 ### One lookup finds the object in every frame.
 
-Objects with the same label merge into one node that lists every frame it was `seen_in`, so the agent finds the sponge in one step, follows its `inside` and `next_to` edges, and returns the frame filenames. The step numbers in those names tell the planner when each observation happened.
+Objects with the same label merge into one node that lists every frame it was `seen_in`, so the agent finds the steel bowl in one step, follows its `inside` and `next_to` edges, and returns the frame filenames. The step numbers in those names tell the planner when each observation happened.
 
 ```visual:exchange
-you: Using the graph for ./episode-07, which frames show the sponge inside the sink, and what was next to it?
+you: Using the graph for ./episode-07, which frames show the steel bowl inside the sink, and what was next to it?
 -> query_graph(question, "./episode-07")
-agent: ep07_step-015.jpg and ep07_step-030.jpg, with the dish brush next to it in both.
+agent: ep07_step-015.jpg and ep07_step-030.jpg, with the white bowl next to it in both.
 ```
 
 ## Good to know

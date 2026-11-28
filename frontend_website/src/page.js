@@ -3,6 +3,8 @@ import "./page.css";
 import "./page-rows.css";
 import { initialiseMorphicNavbar } from "./site-nav.js";
 import { initialiseFooterPixels } from "./footer-pixels.js";
+import { initialiseExchangeAnimation } from "./exchange-animation.js";
+import { initialiseFilms } from "./films/index.js";
 
 const COPY_RESET_MS = 1400;
 
@@ -39,4 +41,6 @@ function initialiseCodeCopy() {
 
 initialiseMorphicNavbar();
 initialiseCodeCopy();
+initialiseExchangeAnimation();
+initialiseFilms();
 initialiseFooterPixels();
