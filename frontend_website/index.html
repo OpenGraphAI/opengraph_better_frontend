@@ -663,6 +663,8 @@
     </section>
 
     <section class="about-section" id="about" aria-labelledby="about-title">
+      <!-- Full-bleed pixel field with the graph grown into it (src/about-graph/). -->
+      <canvas class="about-field" data-about-field aria-hidden="true"></canvas>
       <div class="about-shell">
         <header class="about-header">
           <h2 id="about-title">The open context layer for reasoning agents.</h2>
@@ -672,6 +674,8 @@
             <em>relationships</em> in your data and retrieve the evidence behind
             an answer. The first packages cover images, documents, and tables.
           </p>
+          <!-- Holds open the space the background graph grows into. -->
+          <div class="about-graph" data-about-graph-anchor aria-hidden="true"></div>
         </header>
 
         <div class="about-body">
