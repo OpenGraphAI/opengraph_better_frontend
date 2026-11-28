@@ -4106,6 +4106,42 @@ body.modal-open .to-top-button {
   background: var(--signal);
 }
 
+/* Heading and lede on the left; the right column stays open for the graph
+   drawn in the section's background, on the same split as .about-body below. */
+.about-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.82fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(40px, 5vw, 96px);
+  align-items: start;
+}
+
+.about-header > h2,
+.about-header > .about-lede {
+  grid-column: 1;
+}
+
+.about-graph {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  min-height: clamp(300px, 28vw, 420px);
+}
+
+/* The section's background: a full-bleed dot field (src/about-graph/) that
+   the graph grows out of. It sits behind the content and the section listens
+   for the pointer, so links and the form stay usable. */
+.about-field {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  display: block;
+  width: 100%;
+  /* Set by src/about-graph/ to end at the divider above .about-body. */
+  height: var(--about-field-height, 0px);
+  pointer-events: none;
+}
+
 .about-header h2 {
   max-width: 15ch;
   margin: 0;
@@ -4567,8 +4603,17 @@ body.modal-open .to-top-button {
 }
 
 @media (max-width: 900px) {
-  .about-body {
+  .about-body,
+  .about-header {
     grid-template-columns: 1fr;
+  }
+
+  .about-graph {
+    grid-column: 1;
+    grid-row: auto;
+    height: clamp(220px, 56vw, 320px);
+    min-height: 0;
+    margin-top: clamp(32px, 6vw, 48px);
   }
 }
 
