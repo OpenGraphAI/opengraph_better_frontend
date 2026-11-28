@@ -401,6 +401,13 @@ if (promptDemo) {
 
   async function play(id) {
     const live = () => id === runId;
+    // Coming back on screen to the finished frame: fade it out before the
+    // stream is cleared, instead of cutting straight to an empty session.
+    if (root.classList.contains('demo-static')) {
+      root.classList.add('demo-resetting');
+      await sleep(340);
+      if (!live()) return;
+    }
     root.classList.remove('demo-static');
     reset();
     root.classList.remove('demo-resetting');
@@ -497,5 +504,12 @@ if (promptDemo) {
     syncPlayback();
   });
   document.addEventListener('visibilitychange', syncPlayback);
-  syncPlayback();
+  // Embedded, the page reports visibility right after load. Until then start
+  // from an empty session, so the first frame anyone sees is not the finished
+  // answer about to be wiped for the first run.
+  if (visible) syncPlayback();
+  else {
+    reset();
+    root.classList.add('demo-paused');
+  }
 }

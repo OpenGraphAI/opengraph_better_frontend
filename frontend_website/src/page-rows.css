@@ -206,7 +206,8 @@
   overflow-wrap: anywhere;
 }
 
-.row-visual-exchange,
+/* The terminal keeps the dark instrument surface; the agent exchange sits on
+   paper and reads as a conversation. */
 .row-visual-terminal {
   border-color: var(--panel-edge);
   background: var(--panel);
@@ -214,32 +215,179 @@
   box-shadow: 0 22px 48px -30px rgb(var(--shadow-rgb) / 0.6);
 }
 
-.row-exchange,
 .row-terminal {
   font-family: var(--mono);
   font-size: 12.5px;
   line-height: 1.65;
 }
 
-.row-exchange {
-  display: grid;
-  gap: 10px;
-}
-
-.row-speaker,
 .row-prompt {
   color: rgb(var(--panel-ink-rgb) / 0.5);
 }
 
+.row-exchange {
+  display: grid;
+  gap: 12px;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.row-exchange > li {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.row-exchange p {
+  margin: 0;
+}
+
+.row-speaker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(var(--paper-ink-rgb) / 0.5);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.row-exchange .is-you {
+  justify-items: end;
+  margin-left: clamp(24px, 14%, 80px);
+}
+
+.row-exchange .is-you p {
+  padding: 10px 14px;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--signal);
+  color: var(--signal-contrast);
+}
+
+.row-exchange .is-agent {
+  margin-right: clamp(12px, 8%, 48px);
+}
+
+.row-exchange .is-agent p {
+  color: var(--paper-ink);
+}
+
+/* A tool call: the dot is filled once the call has returned. */
+.row-exchange .is-call {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  justify-self: start;
+  max-width: 100%;
+  padding: 6px 11px;
+  border: 1px solid rgb(var(--paper-ink-rgb) / 0.12);
+  border-radius: 8px;
+  background: var(--paper-active);
+}
+
+.row-exchange .is-call::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--signal);
+  border-radius: 50%;
+  background: var(--signal);
+  transform: translateY(-1px);
+}
+
 .row-exchange .is-call code {
-  color: var(--cited-ink);
-  font-family: inherit;
+  color: rgb(var(--paper-ink-rgb) / 0.72);
+  font-family: var(--mono);
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
-.row-exchange .is-call code::before {
-  content: "→ ";
-  color: rgb(var(--panel-ink-rgb) / 0.45);
+.row-file {
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: rgb(var(--cited-rgb) / 0.09);
+  color: var(--cited);
+  font-family: var(--mono);
+  font-size: 0.86em;
+  overflow-wrap: anywhere;
+}
+
+.is-you .row-file {
+  background: rgb(255 255 255 / 0.16);
+  color: inherit;
+}
+
+/* In the flow and only hidden while playing, so the panel never changes size. */
+.row-replay {
+  display: block;
+  margin: 10px -8px -6px auto;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: rgb(var(--paper-ink-rgb) / 0.5);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.row-replay.is-waiting {
+  visibility: hidden;
+}
+
+.row-replay:hover,
+.row-replay:focus-visible {
+  background: rgb(var(--paper-ink-rgb) / 0.06);
+  color: var(--paper-ink);
+}
+
+.row-replay:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+/* Playback states, set by exchange-animation.js. */
+.row-exchange.is-playing > li:not(.is-shown) {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.row-exchange.is-playing .is-agent .row-word:not(.is-shown) {
+  opacity: 0;
+}
+
+.row-word {
+  transition: opacity 200ms ease;
+}
+
+.row-exchange .is-call.is-running::before {
+  border-top-color: transparent;
+  background: none;
+  animation: row-call-spin 700ms linear infinite;
+}
+
+.row-exchange .is-thinking .row-speaker::after {
+  content: "";
+  width: 18px;
+  height: 6px;
+  background: radial-gradient(circle, currentColor 2px, transparent 2.5px) 0 0 / 6px 6px repeat-x;
+  animation: row-thinking 900ms ease-in-out infinite;
+}
+
+@keyframes row-call-spin {
+  to {
+    transform: translateY(-1px) rotate(360deg);
+  }
+}
+
+@keyframes row-thinking {
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .row-terminal {
@@ -254,40 +402,59 @@
 
 /* ── Good to know, Go deeper, Related ───────────────────────────────────── */
 .page-good-to-know,
-.page-go-deeper,
-.page-related-cards {
+.page-onward {
   padding-top: clamp(40px, 5vw, 56px);
   border-top: 1px solid rgb(var(--ground-ink-rgb) / 0.1);
 }
 
-.page-good-to-know + .page-go-deeper,
-.page-go-deeper + .page-related-cards,
-.page-good-to-know + .page-related-cards {
+.page-good-to-know + .page-onward {
   margin-top: clamp(40px, 5vw, 56px);
 }
 
+/* Notes and limits read as plain text: a rule beside each note, hairlines
+   between limits, no boxes. */
 .page-good-to-know .page-notice {
-  max-width: 72ch;
-  margin-bottom: 14px;
+  max-width: 68ch;
+  margin: 0 0 18px;
+  padding: 2px 0 2px 16px;
+  border: 0;
+  border-left: 2px solid var(--ground-ink);
+  border-radius: 0;
+  background: none;
+  color: rgb(var(--ground-ink-rgb) / 0.78);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.page-good-to-know .page-notice p:first-child {
+  margin-top: 0;
+}
+
+.page-good-to-know .page-notice strong {
+  color: var(--ground-ink);
+  font-weight: 600;
 }
 
 .page-limits {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 10px;
-  margin: 0;
+  max-width: 860px;
+  margin: 28px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .page-limits li {
-  padding: 12px 14px;
-  border: 1px solid rgb(var(--ground-ink-rgb) / 0.1);
-  border-radius: 12px;
-  background: rgb(var(--ground-glass-rgb) / 0.45);
-  color: rgb(var(--ground-ink-rgb) / 0.75);
-  font-size: 14.5px;
-  line-height: 1.5;
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 4px 32px;
+  padding: 14px 0;
+  border-top: 1px solid rgb(var(--ground-ink-rgb) / 0.1);
+  color: rgb(var(--ground-ink-rgb) / 0.68);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.page-limits li:last-child {
+  border-bottom: 1px solid rgb(var(--ground-ink-rgb) / 0.1);
 }
 
 .page-limits strong {
@@ -295,8 +462,24 @@
   font-weight: 600;
 }
 
-.page-good-to-know p {
-  margin: 14px 0 0;
+.page-limits span:only-child {
+  grid-column: 1 / -1;
+}
+
+.page-limits code {
+  color: var(--ground-ink);
+  font-family: var(--mono);
+  font-size: 0.86em;
+}
+
+@media (max-width: 640px) {
+  .page-limits li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.page-good-to-know > p {
+  margin: 20px 0 0;
   font-size: 15px;
 }
 
@@ -307,46 +490,123 @@
   text-underline-offset: 3px;
 }
 
-.page-go-deeper-cards,
-.page-related-cards > div {
+/* Where to go next, drawn as a small graph: each heading is a root node and
+   its links hang off one spine, the way the product links entities. */
+.page-onward {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 40px clamp(32px, 6vw, 88px);
+  --node: 9px;
+  --spine-x: 4px;
+  --indent: 26px;
 }
 
-.page-go-deeper-cards a,
-.page-related-cards a {
+.page-onward .page-section-label {
+  position: relative;
+  margin-bottom: 6px;
+  padding-left: var(--indent);
+}
+
+.page-onward .page-section-label::before {
+  content: "";
+  position: absolute;
+  top: calc(0.7em - var(--node) / 2);
+  left: 0;
+  width: var(--node);
+  height: var(--node);
+  border-radius: 50%;
+  background: var(--ground-ink);
+}
+
+.page-link-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-link-tree li {
+  position: relative;
+  padding-left: var(--indent);
+}
+
+/* The spine runs from the root down to the last link's node. */
+.page-link-tree li::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  bottom: 0;
+  left: var(--spine-x);
+  width: 1px;
+  background: rgb(var(--ground-ink-rgb) / 0.22);
+}
+
+.page-link-tree li:last-child::before {
+  bottom: auto;
+  height: calc(6px + 21px);
+}
+
+.page-link-tree li::after {
+  content: "";
+  position: absolute;
+  top: calc(21px - var(--node) / 2);
+  left: 0;
+  box-sizing: border-box;
+  width: var(--node);
+  height: var(--node);
+  border: 1px solid rgb(var(--ground-ink-rgb) / 0.45);
+  border-radius: 50%;
+  background: var(--ground);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.page-link-tree li:hover::after,
+.page-link-tree li:focus-within::after {
+  border-color: var(--ground-ink);
+  background: var(--ground-ink);
+}
+
+.page-link-tree a {
   display: grid;
-  gap: 3px;
-  padding: 13px 15px;
-  border: 1px solid rgb(var(--ground-ink-rgb) / 0.12);
-  border-radius: 12px;
-  background: rgb(var(--ground-glass-rgb) / 0.45);
+  gap: 2px;
+  padding: 10px 0 12px;
   color: var(--ground-ink);
   font-family: var(--sans);
   text-decoration: none;
-  transition: border-color 140ms ease, background 140ms ease;
 }
 
-.page-go-deeper-cards a:hover,
-.page-go-deeper-cards a:focus-visible,
-.page-related-cards a:hover,
-.page-related-cards a:focus-visible {
-  border-color: rgb(var(--ground-ink-rgb) / 0.3);
-  background: rgb(var(--ground-glass-rgb) / 0.8);
+.page-link-tree a:focus-visible {
+  outline: 2px solid var(--ground-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-.page-go-deeper-cards b,
-.page-related-cards b {
-  font-size: 14px;
+.page-link-tree b {
+  font-size: 16px;
   font-weight: 600;
+  line-height: 22px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 140ms ease;
 }
 
-.page-go-deeper-cards span,
-.page-related-cards span {
-  color: rgb(var(--ground-ink-rgb) / 0.58);
-  font-size: 12.5px;
-  line-height: 1.35;
+.page-link-tree a:hover b,
+.page-link-tree a:focus-visible b {
+  text-decoration-color: rgb(var(--ground-ink-rgb) / 0.45);
+}
+
+.page-link-tree span {
+  max-width: 44ch;
+  color: rgb(var(--ground-ink-rgb) / 0.6);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-link-tree li::after,
+  .page-link-tree b {
+    transition: none;
+  }
 }
 
 @media (max-width: 960px) {
