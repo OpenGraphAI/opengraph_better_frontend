@@ -2,12 +2,15 @@
 // Every motion is a Web Animations track on one shared loop, keyed in seconds,
 // so a scene reads like an edit decision list. Off screen or in a background
 // tab the film pauses; with reduced motion it holds on its poster frame.
+// It waits for its photos to decode before playing, for at most a few seconds.
+import { whenImagesReady } from "./ready.js";
 
 export const EASE = "cubic-bezier(.65,0,.35,1)";
 export const OUT = "cubic-bezier(.22,1,.36,1)";
 const SETTLE_S = 0.5;
 const LEAVE_S = 0.4;
 const VISIBLE_SHARE = 0.2;
+const IMAGE_WAIT_MS = 4000;
 
 /**
  * @param {HTMLElement} stage  element the film fills
@@ -86,6 +89,7 @@ export function createFilm(stage, scene) {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let visible = false;
   let userPaused = false;
+  let imagesReady = false;
 
   function sync() {
     if (reducedMotion.matches) {
@@ -95,7 +99,7 @@ export function createFilm(stage, scene) {
       });
       return;
     }
-    const run = visible && !document.hidden && !userPaused;
+    const run = imagesReady && visible && !document.hidden && !userPaused;
     all().forEach((anim) => (run ? anim.play() : anim.pause()));
   }
 
@@ -111,8 +115,14 @@ export function createFilm(stage, scene) {
     sync();
   }).observe(stage);
   sync();
+  const ready = whenImagesReady(stage.querySelectorAll("img"), IMAGE_WAIT_MS).then(() => {
+    imagesReady = true;
+    sync();
+  });
 
   return {
+    /** Settles once the film's photos are in and it is allowed to play. */
+    ready,
     /** The viewer's own pause, kept until they press play again. */
     setPaused(paused) {
       userPaused = paused;

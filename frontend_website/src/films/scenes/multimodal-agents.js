@@ -31,7 +31,15 @@ const ASK = {
 };
 const ASK_AT = 7.6;
 const timing = askTiming(ASK_AT, ASK);
-const DURATION = Math.ceil(timing.citeAt + 2.2);
+// Three calls and a three-citation answer need a taller panel than the other
+// films. There is no product window beside it here, only the photo ending at
+// x=1160, so the taller close-up still shows none of it.
+const SLOT = { ...CLAUDE_SLOT, y: 160, h: 440 };
+const PANEL_SHOT = [SLOT.x - 14, SLOT.y - 14, SLOT.w + 28, SLOT.h + 28];
+// Stay wide until the last source has lit up, then push in to read the answer.
+const PUSH_AT = timing.callAt.at(-1) + 1.3;
+// Long enough to read the finished answer in close-up before the loop restarts.
+const DURATION = Math.ceil(timing.answerDone + 2.8);
 
 export default {
   duration: DURATION,
@@ -44,16 +52,22 @@ export default {
     doc: [30, 380, 540, 320],
     photo: [610, 50, 560, 410],
     ...CLAUDE_SHOTS,
+    claude: PANEL_SHOT,
   },
   // Unlike the other films the camera pulls back as soon as the calls start,
-  // so each source is seen lighting up when its server answers.
+  // so each source is seen lighting up when its server answers, then pushes
+  // back in so the answer can be read.
   camera: [
     [0, "sources", 0.94], [2.6, "sources", 0.94], [3.3, "sheet", 0.92], [4.2, "sheet", 0.92],
     [4.9, "doc", 0.92], [5.6, "doc", 0.92], [6.3, "photo", 0.92], [7.0, "photo", 0.92],
     [ASK_AT + 0.5, "claude", 0.94], [timing.callAt[0] - 0.6, "claude", 0.95],
-    [timing.callAt[0] + 0.2, "wide", 0.94], [DURATION - 0.4, "wide", 0.96], [DURATION, "sources", 0.94],
+    [timing.callAt[0] + 0.2, "wide", 0.94], [PUSH_AT, "wide", 0.96],
+    [PUSH_AT + 0.8, "claude", 0.95], [DURATION - 0.5, "claude", 0.95], [DURATION, "sources", 0.94],
   ],
-  tilt: [[0, 0, 0], [timing.callAt[0] - 0.6, 0, 0], [timing.callAt[0] + 0.2, 6, -5], [DURATION - 0.4, 4, -2], [DURATION, 0, 0]],
+  tilt: [
+    [0, 0, 0], [timing.callAt[0] - 0.6, 0, 0], [timing.callAt[0] + 0.2, 6, -5],
+    [PUSH_AT, 4, -2], [PUSH_AT + 0.8, 0, 0], [DURATION, 0, 0],
+  ],
 
   build(ctx) {
     const { world, track, show } = ctx;
@@ -80,7 +94,7 @@ export default {
       world.append(chip);
       return chip;
     });
-    const panel = claudePanel(world, { ...CLAUDE_SLOT, ...ASK });
+    const panel = claudePanel(world, { ...SLOT, ...ASK });
 
     // Beat 1: the three sources arrive, each labelled with the server that reads it.
     track(reports.el, show(0.3, { transform: "translate(-60px, -30px) scale(.95)" }));

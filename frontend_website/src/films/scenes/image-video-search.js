@@ -2,17 +2,17 @@
 // on a timeline, one frame is read into a graph, then Claude searches by
 // relationship and only the matching frames light up and get tagged.
 import { askCamera, askTiming, claudeBeat, claudePanel, CLAUDE_SHOTS, CLAUDE_SLOT, WORLD } from "../claude.js";
-import { appWindow, boxes, cite, defocus, dim, drawEdges, el, flyNode, graph, photo, place, snapBoxes } from "../parts.js";
+import { appWindow, boxes, cite, dim, drawEdges, el, flyNode, graph, mute, photo, place, snapBoxes } from "../parts.js";
 
 const ASPECT = 320 / 480;
 const THUMB = { y: 110, w: 204, h: 136 };
 const STEP = 224;
 const FRAMES = [
   { name: "street-03.jpg", src: "/bento/street-03-480.webp", match: true },
-  { name: "kitchen-02.jpg", src: "/bento/kitchen-02-1200.webp" },
+  { name: "kitchen-02.jpg", src: "/bento/kitchen-02-640.webp" },
   { name: "street-11.jpg", src: "/bento/street-11-480.webp", match: true },
   { name: "t00042.jpg", src: "/bento/walkthrough-t00042-480.webp", match: true },
-  { name: "kitchen-03.jpg", src: "/bento/kitchen-03-1200.webp" },
+  { name: "kitchen-03.jpg", src: "/bento/kitchen-03-640.webp" },
 ].map((frame, index) => ({ ...frame, x: 40 + index * STEP }));
 const ASK = {
   repo: "frames",
@@ -34,7 +34,7 @@ export default {
   shots: {
     command: [24, 14, 500, 50],
     timeline: [24, 90, 1152, 210],
-    memory: [24, 96, 860, 400],
+    memory: [24, 124, 860, 400], // starts below the command bar rather than cutting it
     ...CLAUDE_SHOTS,
   },
   camera: [
@@ -79,7 +79,7 @@ export default {
     thumbs.forEach((thumb, index) => track(thumb.el, show(1.9 + index * 0.36, { transform: "scale(.85)", filter: "blur(6px)" })));
 
     // Beat 2: the first frame is read into person, umbrella and its colour.
-    defocus(ctx, thumbs.slice(1).map((thumb) => thumb.shot), 4.0, 7.2);
+    mute(ctx, thumbs.slice(1).map((thumb) => thumb.shot), 4.0, 7.2);
     snapBoxes(ctx, found, 4.6, 7.4);
     const origin = (box) => ({ x: FRAMES[0].x + box.x + 30, y: THUMB.y + box.y });
     flyNode(ctx, memory.nodes.get("person"), origin(found[1]), 5.3);
