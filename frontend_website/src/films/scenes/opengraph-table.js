@@ -38,8 +38,9 @@ export default {
   world: WORLD,
   shots: {
     command: [24, 14, 500, 50],
-    left: [24, 84, 572, 260],
-    right: [604, 84, 572, 260],
+    // Framed below the command bar rather than cutting through it.
+    left: [24, 115, 572, 260],
+    right: [604, 115, 572, 260],
     both: [24, 84, 1152, 620],
     ...CLAUDE_SHOTS,
   },

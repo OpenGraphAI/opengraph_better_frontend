@@ -1,7 +1,7 @@
 // OpenGraph Image: a folder of photos is dealt out of a tilted deck, one photo
 // is read into a graph, then Claude asks which photo shows the desk setup.
 import { askCamera, askTiming, claudeBeat, claudePanel, CLAUDE_SHOTS, CLAUDE_SLOT, WORLD } from "../claude.js";
-import { appWindow, boxes, cite, defocus, dim, drawEdges, flyNode, graph, photo, snapBoxes } from "../parts.js";
+import { appWindow, boxes, cite, dim, drawEdges, flyNode, graph, mute, photo, snapBoxes } from "../parts.js";
 
 const ASPECT = 800 / 1200;
 const FRAME = { y: 96, w: 360, h: 240 };
@@ -71,7 +71,7 @@ export default {
     });
 
     // Beat 2: the middle photo is read; its objects become linked nodes.
-    defocus(ctx, [photos[0].shot, photos[2].shot], 3.7, 7.6);
+    mute(ctx, [photos[0].shot, photos[2].shot], 3.7, 7.6);
     snapBoxes(ctx, found, 4.5, 7.8);
     const origin = (box) => ({ x: PHOTOS[1].x + box.x + 30, y: FRAME.y + box.y });
     flyNode(ctx, memory.nodes.get("tablet"), origin(found[0]), 5.4);

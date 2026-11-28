@@ -49,6 +49,16 @@
   cursor: pointer;
 }
 
+/* A phone-sized stage is too small to share with the button: it sits below,
+   still at least 24px tall (WCAG 2.2 target size). */
+@media (max-width: 600px) {
+  .film-toggle {
+    position: static;
+    display: block;
+    margin: 8px 0 0 auto;
+    padding: 5px 12px;
+  }
+}
 .film-toggle:hover {
   background: #fff;
 }
@@ -58,6 +68,9 @@
   outline-offset: 2px;
 }
 
+.page-film.is-loading .film-toggle {
+  visibility: hidden;
+}
 .page-film:not(.is-live) .film-toggle {
   display: none;
 }

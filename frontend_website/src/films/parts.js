@@ -95,13 +95,16 @@ export function graph(parent, { width, height, nodes, edges }) {
 
 // ── Beats shared by every film ────────────────────────────────────────────────
 
-/** Fly a node in from a world point (usually the box or text it was read from). */
+/**
+ * Fly a node in from a world point (usually the box or text it was read from).
+ * It fades in as it leaves, so it never sits on top of the text it came from.
+ */
 export function flyNode(ctx, pill, from, t) {
   const to = { x: parseFloat(pill.style.left), y: parseFloat(pill.style.top) };
   const start = `translate(${from.x - to.x}px, ${from.y - to.y}px) scale(.6)`;
   ctx.track(pill, [
-    [0, { opacity: 0, transform: start }], [t, { opacity: 0, transform: start }],
-    [t + 0.1, { opacity: 1, transform: start, easing: EASE }], [t + 0.8, { opacity: 1, transform: "none" }],
+    [0, { opacity: 0, transform: start }], [t, { opacity: 0, transform: start, easing: EASE }],
+    [t + 0.3, { opacity: 1 }], [t + 0.8, { opacity: 1, transform: "none" }],
     [ctx.end, { opacity: 1, transform: "none" }], [ctx.end + 0.4, { opacity: 0, transform: "none" }],
   ]);
 }
@@ -118,12 +121,24 @@ export function drawEdges(ctx, edges, t0, gap = 0.3) {
   });
 }
 
-/** Soften `nodes` while the camera looks elsewhere. */
+/** Soften text `nodes` while the camera looks elsewhere (use `mute` for photos). */
 export function defocus(ctx, nodes, t0, t1) {
   nodes.forEach((node) => ctx.track(node, [
     [0, { filter: "blur(0px)", opacity: 1 }], [t0, { filter: "blur(0px)", opacity: 1, easing: EASE }],
     [t0 + 0.6, { filter: "blur(6px)", opacity: 0.5 }], [t1, { filter: "blur(6px)", opacity: 0.5, easing: EASE }],
     [t1 + 0.7, { filter: "blur(0px)", opacity: 1 }],
+  ]));
+}
+
+/**
+ * Quieten photos while the camera looks elsewhere. They stay sharp: a blurred,
+ * faded photo looks like one that has not loaded yet.
+ */
+export function mute(ctx, shots, t0, t1) {
+  const full = { filter: "saturate(1) brightness(1)", opacity: 1 };
+  const quiet = { filter: "saturate(.2) brightness(1.06)", opacity: 0.8 };
+  shots.forEach((shot) => ctx.track(shot, [
+    [0, full], [t0, { ...full, easing: EASE }], [t0 + 0.6, quiet], [t1, { ...quiet, easing: EASE }], [t1 + 0.7, full],
   ]));
 }
 

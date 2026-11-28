@@ -1,12 +1,12 @@
 // Robotics: camera frames slide in like a filmstrip, the scene memory forms
 // from the middle frame, then Claude asks which frames show the bowl.
 import { askCamera, askTiming, claudeBeat, claudePanel, CLAUDE_SHOTS, CLAUDE_SLOT, WORLD } from "../claude.js";
-import { appWindow, boxes, cite, defocus, dim, drawEdges, flyNode, graph, photo, snapBoxes } from "../parts.js";
+import { appWindow, boxes, cite, dim, drawEdges, flyNode, graph, mute, photo, snapBoxes } from "../parts.js";
 
 const PHOTO = { src: "/films/sink-dishes-1200.webp", aspect: 2099 / 1400 };
 const FRAME = { y: 96, w: 360, h: 230 };
 const FRAMES = [
-  { x: 40, name: "ep07_step-000", crop: { x: 0, y: 0.12, w: 1 } },
+  { x: 40, name: "ep07_step-000", crop: { x: 0, y: 0.17, w: 0.62 } }, // the rack and plate, before the bowl
   { x: 420, name: "ep07_step-015", crop: { x: 0, y: 0.45, w: 1 } },
   { x: 800, name: "ep07_step-030", crop: { x: 0.3, y: 0.52, w: 0.7 } },
 ];
@@ -66,7 +66,7 @@ export default {
     frames.forEach((frame, index) => track(frame.el, show(2.1 + index * 0.15, { transform: "translateX(90px)" })));
 
     // Beat 2: focus on the middle frame; its labels become graph nodes.
-    defocus(ctx, [frames[0].shot, frames[2].shot], 3.7, 7.6);
+    mute(ctx, [frames[0].shot, frames[2].shot], 3.7, 7.6);
     snapBoxes(ctx, found, 4.5, 7.8);
     const origin = (box) => ({ x: FRAMES[1].x + box.x + 40, y: FRAME.y + box.y });
     flyNode(ctx, memory.nodes.get("steel"), origin(found[2]), 5.4);

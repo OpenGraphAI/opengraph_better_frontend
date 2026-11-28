@@ -25,11 +25,13 @@ async function mount(figure, createFilm) {
   if (!load || !stage) return;
   try {
     const { default: scene } = await load();
-    figure.classList.add("is-live"); // the stage must be laid out before the scene measures text
+    figure.classList.add("is-live", "is-loading"); // the stage must be laid out before the scene measures text
     const film = createFilm(stage, scene);
     addPauseButton(figure, film);
+    // No Pause button for a film that has not started: it waits for its photos.
+    film.ready.then(() => figure.classList.remove("is-loading"));
   } catch (error) {
-    figure.classList.remove("is-live");
+    figure.classList.remove("is-live", "is-loading");
     stage.replaceChildren();
     reportError(error);
   }
